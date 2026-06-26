@@ -65,6 +65,24 @@ mp_exp(X)                               # Morningstar–Peardon SU(3) closed for
 su2_exp(X2)                             # SU(2) matrix Rodrigues closed form
 ```
 
+### SO(N) / O(N)
+
+`so(N)` (real antisymmetric matrices) gets the same treatment — same engine, same
+`bracket`/`casimir`:
+
+```julia
+f = so_structure_constants(4)           # so(N) fᵃᵇᶜ, dimension N(N−1)/2; so(3) = ε
+G = so_generators(3)
+A = so_algebra(SVector(0.4, -0.2, 0.5), G)    # real antisymmetric
+R = groupexp(A)                         # SO(3) Rodrigues; ∈ SO(N), RᵀR = I, det = 1
+so2_exp(A2)                             # SO(2) plane rotation, closed form
+```
+
+`exp` of the algebra lands in **SO(N)** (det +1); `O(N)` adds the det −1
+reflections, which `exp` cannot reach. `groupexp` routes real 2×2/3×3 to the
+rotation closed forms and complex 2×2/3×3 to `su2_exp`/`mp_exp`, falling back to
+`exp` for everything else.
+
 On the exponential: for a generic static matrix, **just use `exp`** —
 `StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
 Cayley–Hamilton series was benchmarked to be *slower* for `N ≠ 2, 3`. The only

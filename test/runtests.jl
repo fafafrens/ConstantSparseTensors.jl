@@ -106,4 +106,47 @@ using Test
         @test groupexp(X3) === mp_exp(X3)
         @test (@allocated mp_exp(X3)) == 0
     end
+
+    @testset "SO(N) structure constants" begin
+        for N in 3:5
+            M = N * (N - 1) ÷ 2
+            f = so_structure_constants(N)
+            fd = todense(f)
+            @test maximum(abs, fd .+ permutedims(fd, (2, 1, 3))) < 1e-10   # antisymmetric
+            # Jacobi
+            P = todense(contract(f, f, Val(((3, 1),))))
+            J = [P[a, b, c, d] + P[b, c, a, d] + P[c, a, b, d]
+                 for a in 1:M, b in 1:M, c in 1:M, d in 1:M]
+            @test maximum(abs, J) < 1e-10
+            # adjoint Casimir is a positive multiple of the identity
+            C = todense(casimir(f))
+            @test C ≈ C[1, 1] * I(M)
+            @test C[1, 1] > 0
+        end
+        # so(3) ≅ su(2): six unit-magnitude entries (the ε pattern)
+        @test nnz(so_structure_constants(3)) == 6
+        f3 = todense(so_structure_constants(3))
+        @test sort(abs.(filter(!iszero, vec(f3)))) ≈ ones(6)
+        # so(2) abelian
+        @test nnz(so_structure_constants(2)) == 0
+    end
+
+    @testset "SO(N) exponential map" begin
+        for N in 2:5
+            M = N * (N - 1) ÷ 2
+            A = so_algebra(SVector{M}(0.4 .* randn(M)), so_generators(N))
+            R = groupexp(A)
+            @test R ≈ exp(A)
+            @test R'R ≈ I(N)          # orthogonal
+            @test det(R) ≈ 1          # special (SO, not the reflections of O)
+        end
+        # SO(3) Rodrigues fast path
+        A3 = so_algebra(SVector{3}(0.4 .* randn(3)), so_generators(3))
+        @test groupexp(A3) === so3_exp(A3)
+        @test (@allocated so3_exp(A3)) == 0
+        # SO(2) plane rotation
+        A2 = so_algebra(SVector{1}(0.7), so_generators(2))
+        @test groupexp(A2) === so2_exp(A2)
+        @test (@allocated so2_exp(A2)) == 0
+    end
 end

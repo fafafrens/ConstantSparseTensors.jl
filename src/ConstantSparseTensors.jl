@@ -19,7 +19,9 @@ Core:
 Application — SU(N) Lie algebra ([`structure_constants`](@ref), [`generators`](@ref),
 [`bracket`](@ref), [`casimir`](@ref), [`adjoint_generators`](@ref)) and the
 exponential map ([`algebra`](@ref), [`groupexp`](@ref) — fast closed forms for
-SU(2)/SU(3), `exp` fallback otherwise).
+SU(2)/SU(3), `exp` fallback otherwise). SO(N) gets the same treatment via
+[`so_structure_constants`](@ref), [`so_generators`](@ref), [`so_algebra`](@ref),
+and the SO(2)/SO(3) closed forms [`so2_exp`](@ref)/[`so3_exp`](@ref).
 """
 module ConstantSparseTensors
 
@@ -30,9 +32,11 @@ export ConstantSparseTensor, nnz, tdot, contract, todense
 export LeviCivita, lc_sign
 export gellmann, generators, structure_constants, bracket, casimir, adjoint_generators
 export algebra, groupexp, su2_exp, mp_exp
+export so_generators, so_structure_constants, so_algebra, so2_exp, so3_exp
 
 include("tensor.jl")
 include("levicivita.jl")
 include("sun.jl")
+include("so.jl")
 
 end # module
