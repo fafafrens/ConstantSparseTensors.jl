@@ -98,13 +98,66 @@ using Test
         # SU(2) closed form (matrix Rodrigues) — fast path + 0 alloc
         X2 = algebra(SVector(0.3, -0.5, 0.8), generators(2))
         @test su2_exp(X2) ≈ exp(X2)
-        @test groupexp(X2) === su2_exp(X2)
+        @test groupexp(X2) ≈ exp(X2)
         @test (@allocated su2_exp(X2)) == 0
         # SU(3) Morningstar–Peardon closed form — fast path + 0 alloc
         X3 = algebra(SVector{8}(0.3 .* randn(8)), generators(3))
         @test mp_exp(X3) ≈ exp(X3)
-        @test groupexp(X3) === mp_exp(X3)
+        @test groupexp(X3) ≈ exp(X3)
         @test (@allocated mp_exp(X3)) == 0
+    end
+
+    @testset "generic structure_constants + U(N)" begin
+        # generic (Hermitian-basis) f matches the dedicated SU(3) one
+        f_generic = structure_constants(generators(3))
+        f_su3, _  = structure_constants(3)
+        @test todense(f_generic) ≈ todense(f_su3)
+
+        # U(N): the u(1) direction commutes ⇒ its f-rows vanish; su(N) block survives
+        for N in 2:4
+            fu = structure_constants(u_generators(N))
+            fud = todense(fu)
+            id = N^2                                   # the identity generator's index
+            @test all(iszero, fud[id, :, :]) && all(iszero, fud[:, id, :])
+            @test maximum(abs, fud .+ permutedims(fud, (2, 1, 3))) < 1e-10   # antisymmetric
+        end
+
+        # U(N) exp: trace-safe groupexp lands in U(N) (unitary, det a pure phase)
+        for N in 2:4
+            X = algebra(SVector{N^2}(0.3 .* randn(N^2)), u_generators(N))
+            U = groupexp(X)
+            @test U ≈ exp(X)
+            @test U * U' ≈ I(N)                        # unitary
+            @test abs(det(U)) ≈ 1                      # |det| = 1 (phase, not necessarily 1)
+        end
+    end
+
+    @testset "Sp / USp(2n) (type Cₙ)" begin
+        Ω(n) = symplectic_form(n)
+        for n in 1:3
+            N = 2n; M = n * (2n + 1)
+            G = sp_generators(n)
+            @test length(G) == M
+            @test all(g -> g ≈ g', G)                  # Hermitian
+            @test all(g -> abs(tr(g)) < 1e-12, G)      # traceless
+            # structure constants: antisymmetric, Jacobi, Casimir ∝ I
+            f = sp_structure_constants(n)
+            fd = todense(f)
+            @test maximum(abs, fd .+ permutedims(fd, (2, 1, 3))) < 1e-9
+            P = todense(contract(f, f, Val(((3, 1),))))
+            J = [P[a, b, c, d] + P[b, c, a, d] + P[c, a, b, d]
+                 for a in 1:M, b in 1:M, c in 1:M, d in 1:M]
+            @test maximum(abs, J) < 1e-9
+            C = todense(casimir(f))
+            @test C ≈ C[1, 1] * I(M)
+            @test C[1, 1] > 0
+            # exp lands in USp(2n): unitary AND symplectic UᵀΩU = Ω
+            U = groupexp(algebra(SVector{M}(0.3 .* randn(M)), G))
+            @test U * U' ≈ I(N)
+            @test transpose(U) * Ω(n) * U ≈ Ω(n)
+        end
+        # usp(2) = su(2)
+        @test length(sp_generators(1)) == 3
     end
 
     @testset "SO(N) structure constants" begin

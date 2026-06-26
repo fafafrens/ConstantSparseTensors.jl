@@ -83,6 +83,30 @@ reflections, which `exp` cannot reach. `groupexp` routes real 2×2/3×3 to the
 rotation closed forms and complex 2×2/3×3 to `su2_exp`/`mp_exp`, falling back to
 `exp` for everything else.
 
+### All the classical groups + a generic API
+
+The classical families are complete, and one generic primitive does all the work:
+
+| Cartan type | algebra | constructor |
+|---|---|---|
+| Aₙ | su(N) | `structure_constants(N)` / `generators(N)` |
+| Bₙ, Dₙ | so(N) | `so_structure_constants(N)` / `so_generators(N)` |
+| Cₙ | usp(2n) | `sp_structure_constants(n)` / `sp_generators(n)` |
+| — | u(N) | `u_generators(N)` |
+
+```julia
+f = sp_structure_constants(2)            # USp(4) structure constants (dim 10)
+G = sp_generators(2)
+U = groupexp(algebra(SVector{10}(0.2 .* randn(10)), G))   # ∈ USp(4): UᵀΩU = Ω
+
+structure_constants(my_generators)       # ANY orthogonal Hermitian basis
+```
+
+`structure_constants(G)` takes any orthonormal **Hermitian** generator basis and
+returns `fᵃᵇᶜ` as a `ConstantSparseTensor` — so custom or exceptional groups plug
+in without touching the engine. `bracket`, `casimir`, `adjoint_generators`,
+`contract` (Jacobi) then all work as before.
+
 On the exponential: for a generic static matrix, **just use `exp`** —
 `StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
 Cayley–Hamilton series was benchmarked to be *slower* for `N ≠ 2, 3`. The only

@@ -62,6 +62,42 @@ function structure_constants(N::Integer)
 end
 
 """
+    structure_constants(G::AbstractVector{<:AbstractMatrix}) -> ConstantSparseTensor
+
+Generic structure constants `fᵃᵇᶜ` for *any* basis of **Hermitian** generators
+`G` (physics convention `[Gᵃ,Gᵇ] = i fᵃᵇᶜ Gᶜ`), as a [`ConstantSparseTensor`](@ref).
+The basis must be orthogonal under the trace form (the standard su/u/usp bases
+are). This is the engine behind every group family — plug in `generators(N)`,
+`u_generators(N)`, `sp_generators(n)`, or your own. (For SO(N), whose generators
+are real antisymmetric rather than Hermitian, use [`so_structure_constants`](@ref).)
+"""
+function structure_constants(G::AbstractVector{<:AbstractMatrix})
+    M = length(G)
+    f = zeros(M, M, M)
+    nrm = [real(tr(G[c] * G[c])) for c in 1:M]
+    for a in 1:M, b in 1:M
+        comm = G[a] * G[b] - G[b] * G[a]                 # = i Σ fᵃᵇᶜ Gᶜ
+        for c in 1:M
+            f[a, b, c] = real(-im * tr(G[c] * comm)) / nrm[c]
+        end
+    end
+    return ConstantSparseTensor(f)
+end
+
+"""
+    u_generators(N) -> Vector{SMatrix{N,N,ComplexF64}}
+
+The `N²` Hermitian generators of `u(N) = su(N) ⊕ u(1)`: the SU(N) generators plus
+the identity (the `u(1)` direction, which commutes with everything). `exp(i θᵃGᵃ)
+∈ U(N)`.
+"""
+function u_generators(N::Integer)
+    G = generators(N)
+    push!(G, SMatrix{N,N,ComplexF64}(I))
+    return G
+end
+
+"""
     bracket(f, x, y) -> SVector
 
 The Lie bracket on coefficient vectors: `[x,y]ᶜ = fᵃᵇᶜ xᵃ yᵇ` (`= tdot(f, x, y)`).
@@ -110,9 +146,11 @@ which is already allocation-free and, for a generic static matrix, faster than a
 hand-rolled series. (A general Cayley–Hamilton expansion was benchmarked and is
 *not* worth it — `exp` wins for `N ≠ 2, 3`.)
 """
-groupexp(X::SMatrix)                  = exp(X)
-groupexp(X::SMatrix{2,2,ComplexF64})  = su2_exp(X)
-groupexp(X::SMatrix{3,3,ComplexF64})  = mp_exp(X)
+groupexp(X::SMatrix) = exp(X)
+# split off the trace (u(1) part) so the closed forms — which assume a traceless,
+# unimodular generator — stay correct for u(N)/general matrices, not just su(N).
+groupexp(X::SMatrix{2,2,ComplexF64}) = (τ = tr(X) / 2; exp(τ) * su2_exp(X - τ * one(X)))
+groupexp(X::SMatrix{3,3,ComplexF64}) = (τ = tr(X) / 3; exp(τ) * mp_exp(X - τ * one(X)))
 
 """
     su2_exp(X::SMatrix{2,2,ComplexF64}) -> SMatrix{2,2,ComplexF64}

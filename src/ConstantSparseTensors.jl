@@ -22,6 +22,11 @@ exponential map ([`algebra`](@ref), [`groupexp`](@ref) — fast closed forms for
 SU(2)/SU(3), `exp` fallback otherwise). SO(N) gets the same treatment via
 [`so_structure_constants`](@ref), [`so_generators`](@ref), [`so_algebra`](@ref),
 and the SO(2)/SO(3) closed forms [`so2_exp`](@ref)/[`so3_exp`](@ref).
+
+The classical groups are complete: Aₙ = SU(N), Bₙ/Dₙ = SO(N), Cₙ = USp(2n)
+([`sp_generators`](@ref), [`sp_structure_constants`](@ref)), plus U(N)
+([`u_generators`](@ref)). `structure_constants(G)` accepts *any* Hermitian
+generator basis, so custom or exceptional groups plug straight in.
 """
 module ConstantSparseTensors
 
@@ -30,13 +35,15 @@ using LinearAlgebra: tr, det, I, cross
 
 export ConstantSparseTensor, nnz, tdot, contract, todense
 export LeviCivita, lc_sign
-export gellmann, generators, structure_constants, bracket, casimir, adjoint_generators
+export gellmann, generators, u_generators, structure_constants, bracket, casimir, adjoint_generators
 export algebra, groupexp, su2_exp, mp_exp
 export so_generators, so_structure_constants, so_algebra, so2_exp, so3_exp
+export sp_generators, sp_structure_constants, symplectic_form
 
 include("tensor.jl")
 include("levicivita.jl")
 include("sun.jl")
 include("so.jl")
+include("sp.jl")
 
 end # module
