@@ -3,11 +3,10 @@ using StaticArrays
 using LinearAlgebra
 using Test
 
-# Zero-allocation check: warm up, then measure inside a function barrier. The
-# calls are genuinely allocation-free on Julia ≥ 1.11; on 1.10 the same code
-# allocates a little (weaker escape analysis), so the check is skipped there.
+# Zero-allocation check: warm up, then measure inside a function barrier (a bare
+# `@allocated f(x)` in @testset scope can over-count via captured locals). The
+# calls are allocation-free on Julia ≥ 1.11, which is this package's minimum.
 allocs(f, args...) = (f(args...); @allocated f(args...))
-const ALLOC_CHECK = VERSION >= v"1.11"
 
 @testset "ConstantSparseTensors.jl" begin
 
@@ -27,7 +26,7 @@ const ALLOC_CHECK = VERSION >= v"1.11"
         ε = ConstantSparseTensor(Float64[(i - j) * (j - k) * (k - i) ÷ 2 for i in 1:3, j in 1:3, k in 1:3])
         a, b = SVector(1.0, 2.0, 3.0), SVector(4.0, 5.0, 6.0)
         @test tdot(ε, a, b) == cross(a, b)
-        @test allocs(tdot, ε, a, b) == 0 skip = !ALLOC_CHECK
+        @test allocs(tdot, ε, a, b) == 0
 
         δ = ConstantSparseTensor(Matrix{Float64}(I, 3, 3))
         @test tdot(δ, a) == a
@@ -39,7 +38,7 @@ const ALLOC_CHECK = VERSION >= v"1.11"
         δ3 = Matrix{Float64}(I, 3, 3)
         ref = [δ3[j, l] * δ3[k, m] - δ3[j, m] * δ3[k, l] for j in 1:3, k in 1:3, l in 1:3, m in 1:3]
         @test todense(εε) ≈ ref
-        @test allocs(contract, ε, ε, Val(((1, 1),))) == 0 skip = !ALLOC_CHECK
+        @test allocs(contract, ε, ε, Val(((1, 1),))) == 0
     end
 
     @testset "LeviCivita singleton" begin
@@ -48,7 +47,7 @@ const ALLOC_CHECK = VERSION >= v"1.11"
         @test ε[1, 2, 3] == 1 && ε[2, 1, 3] == -1 && ε[1, 1, 2] == 0
         a, b = SVector(1.0, 2.0, 3.0), SVector(4.0, 5.0, 6.0)
         @test tdot(ε, a, b) == cross(a, b)
-        @test allocs(tdot, ε, a, b) == 0 skip = !ALLOC_CHECK
+        @test allocs(tdot, ε, a, b) == 0
         # materialize and cross-check against the built tensor
         @test todense(ConstantSparseTensor(ε)) == [lc_sign((i, j, k)) for i in 1:3, j in 1:3, k in 1:3]
     end
@@ -105,12 +104,12 @@ const ALLOC_CHECK = VERSION >= v"1.11"
         X2 = algebra(SVector(0.3, -0.5, 0.8), generators(2))
         @test su2_exp(X2) ≈ exp(X2)
         @test groupexp(X2) ≈ exp(X2)
-        @test allocs(su2_exp, X2) == 0 skip = !ALLOC_CHECK
+        @test allocs(su2_exp, X2) == 0
         # SU(3) Morningstar–Peardon closed form — fast path + 0 alloc
         X3 = algebra(SVector{8}(0.3 .* randn(8)), generators(3))
         @test mp_exp(X3) ≈ exp(X3)
         @test groupexp(X3) ≈ exp(X3)
-        @test allocs(mp_exp, X3) == 0 skip = !ALLOC_CHECK
+        @test allocs(mp_exp, X3) == 0
     end
 
     @testset "generic structure_constants + U(N)" begin
@@ -202,10 +201,10 @@ const ALLOC_CHECK = VERSION >= v"1.11"
         # SO(3) Rodrigues fast path
         A3 = so_algebra(SVector{3}(0.4 .* randn(3)), so_generators(3))
         @test groupexp(A3) === so3_exp(A3)
-        @test allocs(so3_exp, A3) == 0 skip = !ALLOC_CHECK
+        @test allocs(so3_exp, A3) == 0
         # SO(2) plane rotation
         A2 = so_algebra(SVector{1}(0.7), so_generators(2))
         @test groupexp(A2) === so2_exp(A2)
-        @test allocs(so2_exp, A2) == 0 skip = !ALLOC_CHECK
+        @test allocs(so2_exp, A2) == 0
     end
 end
