@@ -60,10 +60,17 @@ adjoint_generators(3)                   # (Tᵃ)_bc = −i fᵃᵇᶜ
 # exponential map  algebra → group  (lattice gauge-link / HMC update)
 T = generators(3)
 X = algebra(SVector{8}(0.3 .* randn(8)), T)   # X = i θᵃTᵃ, anti-Hermitian
-U = expch(X)                            # Cayley–Hamilton matrix exp, any N, 0 alloc
-mp_exp(X)                               # Morningstar–Peardon closed form (fastest SU(3))
-su2_exp(SVector(0.3,-0.5,0.8))          # SU(2) Rodrigues closed form
+U = groupexp(X)                         # fast closed form for SU(2)/SU(3), `exp` otherwise
+mp_exp(X)                               # Morningstar–Peardon SU(3) closed form  (~1.4× exp)
+su2_exp(X2)                             # SU(2) matrix Rodrigues closed form
 ```
+
+On the exponential: for a generic static matrix, **just use `exp`** —
+`StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
+Cayley–Hamilton series was benchmarked to be *slower* for `N ≠ 2, 3`. The only
+wins are the group-specific closed forms `su2_exp` / `mp_exp`, which exploit the
+degree-2 minimal polynomial. `groupexp` picks the fast path automatically and
+falls back to `exp`.
 
 `f`/`d` stay sparse as `N` grows (only a few % of `(N²−1)³` entries are nonzero), so
 the SU(3) bracket runs ~250× faster than the dense `8×8×8` contraction. SU(2): `f`

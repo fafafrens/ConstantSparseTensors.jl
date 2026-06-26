@@ -101,64 +101,32 @@ HMC update `U = exp(i ε πᵃ Tᵃ)`.
 algebra(θ::SVector, T) = sum(im * θ[a] * T[a] for a in eachindex(θ))
 
 """
-    su2_exp(θ::SVector{3}) -> SMatrix{2,2,ComplexF64}
+    groupexp(X::SMatrix) -> SMatrix
 
-Closed-form (Rodrigues) SU(2) exponential
-`exp(i θ·σ/2) = cos(|θ|/2) I + i sin(|θ|/2) (θ̂·σ)`.
+Exponential map `X ↦ exp(X)` from the (anti-Hermitian) Lie algebra to the group.
+Dispatches to the fast closed form for SU(2) ([`su2_exp`](@ref)) and SU(3)
+([`mp_exp`](@ref)); for every other size it falls back to StaticArrays' `exp`,
+which is already allocation-free and, for a generic static matrix, faster than a
+hand-rolled series. (A general Cayley–Hamilton expansion was benchmarked and is
+*not* worth it — `exp` wins for `N ≠ 2, 3`.)
 """
-function su2_exp(θ::SVector{3})
-    σ1 = SA[0.0+0im 1; 1 0]; σ2 = SA[0.0 -im; im 0]; σ3 = SA[1.0+0im 0; 0 -1]
-    Id = SMatrix{2,2,ComplexF64}(I)
-    n  = sqrt(θ[1]^2 + θ[2]^2 + θ[3]^2)
-    n < 1e-14 && return Id
-    h = n / 2
-    return cos(h) * Id + (im * sin(h) / n) * (θ[1] * σ1 + θ[2] * σ2 + θ[3] * σ3)
-end
-
-# one companion-matrix step  a ← X·a  reduced via  X^N = Σ b[k] X^{k-1}.
-# A standalone function so `a` is an argument (never a captured, reassigned closure
-# variable — that boxing is what kills performance and allocates).
-@inline _companion(a::SVector{N,T}, b::SVector{N,T}) where {N,T} =
-    SVector{N,T}(ntuple(k -> (k == 1 ? zero(T) : a[k - 1]) + a[N] * b[k], Val(N)))
+groupexp(X::SMatrix)                  = exp(X)
+groupexp(X::SMatrix{2,2,ComplexF64})  = su2_exp(X)
+groupexp(X::SMatrix{3,3,ComplexF64})  = mp_exp(X)
 
 """
-    expch(X::SMatrix{N,N}; nterms=20) -> SMatrix{N,N}
+    su2_exp(X::SMatrix{2,2,ComplexF64}) -> SMatrix{2,2,ComplexF64}
 
-Matrix exponential at near-closed-form speed via Cayley–Hamilton:
-`exp(X) = Σ_{k=0}^{N-1} c_k X^k`. The `c_k` come from the characteristic
-polynomial (Faddeev–LeVerrier) plus a Taylor recurrence — no eigendecomposition,
-no scaling/squaring. Same code for every `N`. For large `‖X‖`, raise `nterms`.
+Closed-form SU(2) exponential of an anti-Hermitian traceless `X = iQ`:
+`exp(iQ) = cos λ · I + i (sin λ / λ) Q`, where `±λ` are the eigenvalues of the
+Hermitian traceless `Q = −iX` (`λ = √(½ Tr Q²)`). The matrix form of Rodrigues —
+faster than the generic `exp`.
 """
-function expch(X::SMatrix{N,N,T}; nterms::Int = 20) where {N,T}
-    Id = one(X)
-
-    # 1. characteristic polynomial via Faddeev–LeVerrier  →  X^N = Σ_k b[k] X^{k-1}
-    Mk  = Id
-    csv = zero(MVector{N,T})                       # csv[i] = coeff of X^{i-1} in char poly
-    for k in 1:N
-        Mk  = X * Mk
-        ck  = -tr(Mk) / k
-        csv[N + 1 - k] = ck
-        Mk  = Mk + ck * Id
-    end
-    b = -SVector{N,T}(csv)                              # reduction: X^N = Σ b[k] X^{k-1}
-
-    # 2. Taylor series kept in the basis {I,X,…,X^{N-1}} via the companion step
-    a = SVector{N,T}(ntuple(k -> k == 1 ? one(T) : zero(T), Val(N)))   # X^0 = I
-    c = a                                                             # /0!
-    invf = 1.0
-    for m in 1:nterms
-        invf /= m
-        a = _companion(a, b)                            # a ← X·a (reduced) — no boxing
-        c = c + a * invf
-    end
-
-    # 3. reassemble  Σ c[k] X^{k-1}  by Horner
-    R = c[N] * Id
-    for k in (N - 1):-1:1
-        R = R * X + c[k] * Id
-    end
-    return R
+function su2_exp(X::SMatrix{2,2,ComplexF64})
+    Q = -im * X                          # Hermitian, traceless
+    λ = sqrt(real(tr(Q * Q)) / 2)        # eigenvalues ±λ
+    λ < 1e-12 && return one(X) + im * Q
+    return cos(λ) * one(X) + (im * sin(λ) / λ) * Q
 end
 
 """

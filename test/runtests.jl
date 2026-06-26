@@ -89,20 +89,21 @@ using Test
     @testset "exponential map: SU(N)" begin
         for N in 2:6
             T = generators(N)
-            θ = SVector{N^2 - 1}(0.3 .* randn(N^2 - 1))
-            X = algebra(θ, T)
-            U = expch(X)
-            @test U ≈ exp(X)
+            X = algebra(SVector{N^2 - 1}(0.3 .* randn(N^2 - 1)), T)
+            U = groupexp(X)
+            @test U ≈ exp(X)           # dispatches to closed form (N=2,3) or exp
             @test U * U' ≈ I(N)        # unitary
             @test det(U) ≈ 1           # special
-            @test (@allocated expch(X)) == 0
         end
-        # SU(2) Rodrigues closed form
-        θ = SVector(0.3, -0.5, 0.8)
-        @test su2_exp(θ) ≈ exp(algebra(θ, generators(2)))
-        # SU(3) Morningstar–Peardon closed form
+        # SU(2) closed form (matrix Rodrigues) — fast path + 0 alloc
+        X2 = algebra(SVector(0.3, -0.5, 0.8), generators(2))
+        @test su2_exp(X2) ≈ exp(X2)
+        @test groupexp(X2) === su2_exp(X2)
+        @test (@allocated su2_exp(X2)) == 0
+        # SU(3) Morningstar–Peardon closed form — fast path + 0 alloc
         X3 = algebra(SVector{8}(0.3 .* randn(8)), generators(3))
         @test mp_exp(X3) ≈ exp(X3)
+        @test groupexp(X3) === mp_exp(X3)
         @test (@allocated mp_exp(X3)) == 0
     end
 end

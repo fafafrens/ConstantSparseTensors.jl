@@ -18,8 +18,8 @@ Core:
 
 Application — SU(N) Lie algebra ([`structure_constants`](@ref), [`generators`](@ref),
 [`bracket`](@ref), [`casimir`](@ref), [`adjoint_generators`](@ref)) and the
-exponential map ([`algebra`](@ref), [`expch`](@ref), [`mp_exp`](@ref),
-[`su2_exp`](@ref)).
+exponential map ([`algebra`](@ref), [`groupexp`](@ref) — fast closed forms for
+SU(2)/SU(3), `exp` fallback otherwise).
 """
 module ConstantSparseTensors
 
@@ -29,7 +29,7 @@ using LinearAlgebra: tr, det, I, cross
 export ConstantSparseTensor, nnz, tdot, contract, todense
 export LeviCivita, lc_sign
 export gellmann, generators, structure_constants, bracket, casimir, adjoint_generators
-export algebra, su2_exp, expch, mp_exp
+export algebra, groupexp, su2_exp, mp_exp
 
 include("tensor.jl")
 include("levicivita.jl")
