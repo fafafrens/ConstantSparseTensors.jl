@@ -5,7 +5,7 @@ using Test
 
 # Zero-allocation check: warm up, then measure inside a function barrier (a bare
 # `@allocated f(x)` in @testset scope can over-count via captured locals). The
-# calls are allocation-free on Julia ≥ 1.11, which is this package's minimum.
+# calls are allocation-free on Julia ≥ 1.12, which is this package's minimum.
 allocs(f, args...) = (f(args...); @allocated f(args...))
 
 @testset "ConstantSparseTensors.jl" begin
