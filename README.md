@@ -1,9 +1,12 @@
 # ConstantSparseTensors.jl
 
+[![CI](https://github.com/fafafrens/ConstantSparseTensors.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/fafafrens/ConstantSparseTensors.jl/actions/workflows/CI.yml)
+
 Small static tensors that are **mostly zero**, with the nonzero *pattern* carried in
 the **type** (free — no zeros stored, no runtime search) and the nonzero *values* in
 a tiny `SVector`. Contractions are `@generated` over the nonzeros only and allocate
-nothing. Includes an SU(N) Lie-algebra application built entirely on the engine.
+nothing. Includes a classical-group (SU/SO/Sp/U) Lie-algebra application built
+entirely on the engine.
 
 Depends only on `StaticArrays` (+ stdlib `LinearAlgebra`).
 
@@ -122,6 +125,12 @@ is the Levi-Civita ε and `d ≡ 0`.
 
 ```julia
 using Pkg
+Pkg.add(url="https://github.com/fafafrens/ConstantSparseTensors.jl")
+```
+
+Local development:
+
+```julia
 Pkg.develop(path="path/to/ConstantSparseTensors.jl")
 Pkg.test("ConstantSparseTensors")
 ```
