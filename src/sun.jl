@@ -175,10 +175,11 @@ with the `fⱼ` in closed form from the two invariants of the Hermitian traceles
 `Q = −iX` (`c₁ = ½TrQ²`, `c₀ = detQ`). No eigensolve, no recurrence — a handful
 of transcendentals + two matmuls. Fastest exact SU(3) exponential.
 """
-function mp_exp(X::SMatrix{3,3,ComplexF64})
-    Q  = -im * X                              # Hermitian, traceless
+# Morningstar–Peardon coefficients (f₀,f₁,f₂) for exp(iQ) = f₀I + f₁Q + f₂Q²,
+# Q Hermitian traceless 3×3. Shared by `mp_exp` (matrix) and `expv` (vector action).
+@inline function _mp_coeffs(Q::SMatrix{3,3,ComplexF64})
     c1 = real(tr(Q * Q)) / 2                  # ½ Tr Q²   (invariant)
-    c1 < 1e-12 && return one(X) + im * Q      # Q ≈ 0
+    c1 < 1e-12 && return (one(ComplexF64), im, zero(ComplexF64))   # exp(iQ) ≈ I + iQ
     c0   = real(det(Q))                       # det Q = ⅓ Tr Q³   (invariant)
     s    = c0 < 0 ? -1 : 1                     # use the c0≥0 branch, then symmetry
     c0m  = 2 * (c1 / 3)^(3 / 2)                # c0_max
@@ -192,8 +193,12 @@ function mp_exp(X::SMatrix{3,3,ComplexF64})
     f0 = ((u^2 - w^2) * e2iu + emiu * (8u^2 * cw + 2im * u * (3u^2 + w^2) * ξ0)) / den
     f1 = (2u * e2iu - emiu * (2u * cw - im * (3u^2 - w^2) * ξ0)) / den
     f2 = (e2iu - emiu * (cw + 3im * u * ξ0)) / den
-    if s < 0                                   # fⱼ(−c0) = (−1)ʲ conj(fⱼ(c0))
-        f0, f1, f2 = conj(f0), -conj(f1), conj(f2)
-    end
+    s < 0 && ((f0, f1, f2) = (conj(f0), -conj(f1), conj(f2)))   # fⱼ(−c0) = (−1)ʲ conj(fⱼ)
+    return (f0, f1, f2)
+end
+
+function mp_exp(X::SMatrix{3,3,ComplexF64})
+    Q = -im * X                               # Hermitian, traceless
+    f0, f1, f2 = _mp_coeffs(Q)
     return f0 * one(X) + f1 * Q + f2 * (Q * Q)
 end

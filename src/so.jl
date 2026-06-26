@@ -74,6 +74,34 @@ function so3_exp(A::SMatrix{3,3,Float64})
     return one(A) + (sin(θ) / θ) * A + ((1 - cos(θ)) / θ2) * (A * A)
 end
 
-# extend the unified entry point: real (SO) closed forms for 2×2 / 3×3
+"""
+    so4_exp(A::SMatrix{4,4,Float64}) -> SMatrix{4,4,Float64}
+
+Closed-form SO(4) exponential. A 4×4 antisymmetric `A` has eigenvalues
+`±iθ₁, ±iθ₂` (so(4) = su(2)⊕su(2)); using the projectors onto its two invariant
+2-planes (`θᵢ` from `½Tr A² = −(θ₁²+θ₂²)` and the Pfaffian `Pf(A) = ±θ₁θ₂`),
+`exp(A)` is a plane rotation by `θ₁`/`θ₂` in each. Falls back to the generic `exp`
+when the two angles are (near) degenerate, where the projector split is
+ill-conditioned.
+"""
+function so4_exp(A::SMatrix{4,4,Float64})
+    A2 = A * A
+    q1 = -tr(A2) / 2                                   # θ₁² + θ₂²
+    Pf = A[1, 2] * A[3, 4] - A[1, 3] * A[2, 4] + A[1, 4] * A[2, 3]   # Pfaffian = ±θ₁θ₂
+    disc = q1^2 - 4 * Pf^2
+    disc < 1e-12 * (q1^2 + 1) && return exp(A)         # θ₁ ≈ θ₂ → fall back
+    sq = sqrt(disc)
+    t1 = (q1 + sq) / 2; t2 = (q1 - sq) / 2             # θ₁², θ₂²
+    θ1 = sqrt(max(t1, 0.0)); θ2 = sqrt(max(t2, 0.0))
+    I4 = one(A)
+    P1 = (A2 + t2 * I4) / (t2 - t1)                    # projector onto the θ₁-plane
+    P2 = (A2 + t1 * I4) / (t1 - t2)                    # projector onto the θ₂-plane
+    s1 = θ1 < 1e-8 ? 1.0 : sin(θ1) / θ1
+    s2 = θ2 < 1e-8 ? 1.0 : sin(θ2) / θ2
+    return P1 * (cos(θ1) * I4 + s1 * A) + P2 * (cos(θ2) * I4 + s2 * A)
+end
+
+# extend the unified entry point: real (SO) closed forms for 2×2 / 3×3 / 4×4
 groupexp(A::SMatrix{2,2,Float64}) = so2_exp(A)
 groupexp(A::SMatrix{3,3,Float64}) = so3_exp(A)
+groupexp(A::SMatrix{4,4,Float64}) = so4_exp(A)

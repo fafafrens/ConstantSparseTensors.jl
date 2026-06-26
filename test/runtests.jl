@@ -207,4 +207,34 @@ allocs(f, args...) = (f(args...); @allocated f(args...))
         @test groupexp(A2) === so2_exp(A2)
         @test allocs(so2_exp, A2) == 0
     end
+
+    @testset "SO(4) closed-form exp" begin
+        for _ in 1:5
+            A = so_algebra(SVector{6}(0.6 .* randn(6)), so_generators(4))
+            R = so4_exp(A)
+            @test R ≈ exp(A)
+            @test R'R ≈ I(4)
+            @test det(R) ≈ 1
+        end
+        @test groupexp(so_algebra(SVector{6}(0.3 .* randn(6)), so_generators(4))) isa SMatrix{4,4,Float64}
+    end
+
+    @testset "expv: action without materializing" begin
+        # SO(2)/SO(3): closed-form vector rotation
+        A2 = so_algebra(SVector{1}(0.7), so_generators(2)); v2 = SVector(1.0, -2.0)
+        @test expv(A2, v2) ≈ groupexp(A2) * v2
+        A3 = so_algebra(SVector{3}(0.5 .* randn(3)), so_generators(3)); v3 = SVector(1.0, 2.0, -0.5)
+        @test expv(A3, v3) ≈ groupexp(A3) * v3
+        # SU(2)/SU(3) and U(N): matvec action matches exp(X)*v
+        X2 = algebra(SVector(0.3, -0.5, 0.8), generators(2)); w2 = SVector(1.0 + 0im, 2.0 - 1im)
+        @test expv(X2, w2) ≈ exp(X2) * w2
+        X3 = algebra(SVector{8}(0.4 .* randn(8)), generators(3)); w3 = SVector(1.0 + 0im, -1.0 + 2im, 0.5 + 0im)
+        @test expv(X3, w3) ≈ exp(X3) * w3
+        Xu = algebra(SVector{4}(0.3 .* randn(4)), u_generators(2))             # u(2): nonzero trace
+        @test expv(Xu, w2) ≈ exp(Xu) * w2
+        # generic fallback (SU(4))
+        X4 = algebra(SVector{15}(0.2 .* randn(15)), generators(4)); w4 = @SVector randn(ComplexF64, 4)
+        @test expv(X4, w4) ≈ exp(X4) * w4
+        @test allocs(expv, A3, v3) == 0
+    end
 end

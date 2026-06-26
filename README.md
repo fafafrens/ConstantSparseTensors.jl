@@ -66,6 +66,9 @@ X = algebra(SVector{8}(0.3 .* randn(8)), T)   # X = i θᵃTᵃ, anti-Hermitian
 U = groupexp(X)                         # fast closed form for SU(2)/SU(3), `exp` otherwise
 mp_exp(X)                               # Morningstar–Peardon SU(3) closed form  (~1.4× exp)
 su2_exp(X2)                             # SU(2) matrix Rodrigues closed form
+
+expv(X, v)                              # exp(X)·v WITHOUT forming exp(X)
+                                        #   SO(3): Rodrigues vector rotation; SU(N): matvec action
 ```
 
 ### SO(N) / O(N)
@@ -79,10 +82,11 @@ G = so_generators(3)
 A = so_algebra(SVector(0.4, -0.2, 0.5), G)    # real antisymmetric
 R = groupexp(A)                         # SO(3) Rodrigues; ∈ SO(N), RᵀR = I, det = 1
 so2_exp(A2)                             # SO(2) plane rotation, closed form
+so4_exp(A4)                             # SO(4) closed form (so(4)=su(2)⊕su(2))
 ```
 
 `exp` of the algebra lands in **SO(N)** (det +1); `O(N)` adds the det −1
-reflections, which `exp` cannot reach. `groupexp` routes real 2×2/3×3 to the
+reflections, which `exp` cannot reach. `groupexp` routes real 2×2/3×3/4×4 to the
 rotation closed forms and complex 2×2/3×3 to `su2_exp`/`mp_exp`, falling back to
 `exp` for everything else.
 
