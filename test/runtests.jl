@@ -225,6 +225,11 @@ allocs(f, args...) = (f(args...); @allocated f(args...))
         @test expv(A2, v2) ≈ groupexp(A2) * v2
         A3 = so_algebra(SVector{3}(0.5 .* randn(3)), so_generators(3)); v3 = SVector(1.0, 2.0, -0.5)
         @test expv(A3, v3) ≈ groupexp(A3) * v3
+        # SO(4): cubic-in-A matvec action
+        for _ in 1:5
+            A4 = so_algebra(SVector{6}(0.6 .* randn(6)), so_generators(4)); v4 = @SVector randn(4)
+            @test expv(A4, v4) ≈ exp(A4) * v4
+        end
         # SU(2)/SU(3) and U(N): matvec action matches exp(X)*v
         X2 = algebra(SVector(0.3, -0.5, 0.8), generators(2)); w2 = SVector(1.0 + 0im, 2.0 - 1im)
         @test expv(X2, w2) ≈ exp(X2) * w2

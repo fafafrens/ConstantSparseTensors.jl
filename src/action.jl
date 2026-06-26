@@ -28,6 +28,24 @@ function expv(A::SMatrix{3,3,Float64}, v::SVector{3})
     return cos(θ) * v + sin(θ) * cross(k, v) + (1 - cos(θ)) * dot(k, v) * k
 end
 
+# SO(4): exp(A) is a cubic in A (minimal poly (A²+θ₁²)(A²+θ₂²)=0), so
+# exp(A)v = c₀v + c₁(Av) + c₂(A²v) + c₃(A³v) — three matvecs, no matrix formed.
+# The cᵢ come from the two angles; θ₁²+θ₂² = ‖A‖²/2 and θ₁θ₂ = |Pf(A)|.
+function expv(A::SMatrix{4,4,Float64}, v::SVector{4})
+    q1 = sum(abs2, A) / 2                                  # θ₁² + θ₂²
+    Pf = A[1, 2] * A[3, 4] - A[1, 3] * A[2, 4] + A[1, 4] * A[2, 3]
+    disc = q1^2 - 4 * Pf^2
+    disc < 1e-12 * (q1^2 + 1) && return so4_exp(A) * v     # θ₁ ≈ θ₂ → fall back
+    sq = sqrt(disc); t1 = (q1 + sq) / 2; t2 = (q1 - sq) / 2
+    θ1 = sqrt(max(t1, 0.0)); θ2 = sqrt(max(t2, 0.0))
+    a1 = θ1 < 1e-8 ? 1.0 : sin(θ1) / θ1                    # sinc on each plane
+    a2 = θ2 < 1e-8 ? 1.0 : sin(θ2) / θ2
+    c2 = (cos(θ1) - cos(θ2)) / (t2 - t1); c0 = cos(θ1) + c2 * t1
+    c3 = (a1 - a2) / (t2 - t1);           c1 = a1 + c3 * t1
+    Av = A * v; A2v = A * Av; A3v = A * A2v
+    return c0 * v + c1 * Av + c2 * A2v + c3 * A3v
+end
+
 # SU(2)/U(2): exp(X)v = e^τ (cos λ · v + (sin λ/λ) X₀·v), X₀ the traceless part.
 function expv(X::SMatrix{2,2,ComplexF64}, v::SVector{2})
     τ  = tr(X) / 2; X0 = X - τ * one(X)
