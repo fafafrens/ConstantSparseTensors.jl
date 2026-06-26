@@ -114,6 +114,28 @@ returns `fᵃᵇᶜ` as a `ConstantSparseTensor` — so custom or exceptional gr
 in without touching the engine. `bracket`, `casimir`, `adjoint_generators`,
 `contract` (Jacobi) then all work as before.
 
+### Invariants & the root system
+
+The standard Lie-algebra quantities fall out of the generators and `f`:
+
+```julia
+quadratic_casimir(generators(3))         # C₂ = Σ TᵃTᵃ = (N²−1)/2N · I   (Schur)
+dynkin_index(generators(3))              # T(R): Tr(TᵃTᵇ) = T(R) δ        (½ for fund)
+killing_form(f)                          # κᵃᵇ = fᵃᶜᵈfᵇᶜᵈ  (∝ I, simple algebra)
+adjoint_action(f, x)                     # matrix of ad_X = [X,·];  exp(·) = Ad
+
+# recover the Dynkin type from the matrices alone
+rs = root_system(generators(3))          # su(3) = A₂
+rs.rank          # 2
+length(rs.roots) # 6
+rs.cartan        # [2 -1; -1 2]
+```
+
+`root_system` finds a Cartan subalgebra (centralizer of a generic element),
+reads the **roots** off the adjoint eigenvectors, and returns the **simple roots**
+and **Cartan matrix** — rediscovering the classification (su(N)=Aₙ, so=Bₙ/Dₙ,
+sp=Cₙ) straight from the generator matrices.
+
 On the exponential: for a generic static matrix, **just use `exp`** —
 `StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
 Cayley–Hamilton series was benchmarked to be *slower* for `N ≠ 2, 3`. The only

@@ -1,6 +1,7 @@
 using ConstantSparseTensors
 using StaticArrays
 using LinearAlgebra
+using Random
 using Test
 
 # Zero-allocation check: warm up, then measure inside a function barrier (a bare
@@ -243,5 +244,35 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         X4 = algebra(SVector{15}(0.2 .* randn(15)), generators(4)); w4 = @SVector randn(ComplexF64, 4)
         @test expv(X4, w4) ≈ exp(X4) * w4
         @test allocs(expv, A3, v3) == 0 skip = !ALLOC_CHECK
+    end
+
+    @testset "invariants" begin
+        for N in 2:4
+            @test quadratic_casimir(generators(N)) ≈ ((N^2 - 1) / (2N)) * I(N)   # Schur: ∝ I
+            @test dynkin_index(generators(N)) ≈ 0.5                              # T(fund) = ½
+        end
+        f, _ = structure_constants(3)
+        x = SVector{8}(randn(8)); y = SVector{8}(randn(8))
+        @test adjoint_action(f, x) * y ≈ bracket(f, x, y)                       # ad_X y = [X,y]
+        @test killing_form(f) ≈ 3 * I(8)                                        # = N·I for su(N)
+    end
+
+    @testset "root systems (Dynkin from the matrices)" begin
+        Random.seed!(0xC0FFEE)
+        soH(N) = [SMatrix{N,N,ComplexF64}(im * A) for A in so_generators(N)]    # Hermitian so(N)
+        # (generators, rank, #roots, det Cartan)
+        cases = [(generators(2), 1, 2, 2), (generators(3), 2, 6, 3), (generators(4), 3, 12, 4),
+                 (soH(5), 2, 8, 2), (sp_generators(2), 2, 8, 2), (soH(6), 3, 12, 4)]
+        for (G, r, nr, dC) in cases
+            rs = root_system(G)
+            @test rs.rank == r
+            @test length(rs.roots) == nr
+            @test length(rs.simple) == r
+            @test round(Int, det(rs.cartan)) == dC
+            @test all(rs.cartan[i, i] == 2 for i in 1:r)                         # Cartan diagonal
+            @test all(rs.cartan[i, j] <= 0 for i in 1:r, j in 1:r if i != j)     # off-diagonal ≤ 0
+            @test all((rs.cartan[i, j] == 0) == (rs.cartan[j, i] == 0)           # zeros symmetric
+                      for i in 1:r, j in 1:r)
+        end
     end
 end
