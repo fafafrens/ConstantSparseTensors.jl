@@ -132,11 +132,30 @@ using Pkg
 Pkg.add(url="https://github.com/fafafrens/ConstantSparseTensors.jl")
 ```
 
+Requires Julia 1.10+. (The contraction/exp kernels are allocation-free on Julia
+1.12+; on 1.10/1.11 they allocate a little, which is why the strict zero-alloc tests
+are gated to 1.12.)
+
 Local development:
 
 ```julia
 Pkg.develop(path="path/to/ConstantSparseTensors.jl")
 Pkg.test("ConstantSparseTensors")
+```
+
+## Benchmarks
+
+```bash
+julia --project=benchmark -e 'using Pkg; Pkg.develop(path="."); Pkg.instantiate()'
+julia --project=benchmark benchmark/benchmarks.jl
+```
+
+reproduces the headline numbers (on an M-series CPU):
+
+```
+SU(3) f-contraction    sparse  17.7 ns   dense  927 ns   (52×)
+SU(2) exp    su2_exp  31 ns   generic exp 106 ns          SO(3) exp  so3_exp 28 ns  exp  87 ns
+SU(3) exp     mp_exp 251 ns   generic exp 355 ns          SO(4) exp  so4_exp 105 ns exp 211 ns
 ```
 
 ## Background
