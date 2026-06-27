@@ -319,4 +319,18 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         @test size(S[1]) == (6, 6)
         @test quadratic_casimir(S) ≈ (4 / 3) * I(6)
     end
+
+    @testset "irreducible decomposition" begin
+        G = generators(3); bar = conjugate_rep(G)
+        dm(r) = sort([(ir.dim, ir.multiplicity) for ir in r])
+        @test dm(decompose(G)) == [(3, 1)]                              # irreducible
+        @test dm(decompose(tensor_rep(G, bar))) == [(1, 1), (8, 1)]     # 3 ⊗ 3̄ = 1 ⊕ 8
+        @test dm(decompose(tensor_rep(G, G))) == [(3, 1), (6, 1)]       # 3 ⊗ 3 = 3̄ ⊕ 6
+        @test dm(decompose(direct_sum_rep(G, G))) == [(3, 2)]           # 3 ⊕ 3: multiplicity 2
+        @test dm(decompose(tensor_rep(adjoint_generators(3), G))) ==
+              [(3, 1), (6, 1), (15, 1)]                                 # 8 ⊗ 3 = 3 ⊕ 6 ⊕ 15
+        # components partition the representation dimension
+        d = decompose(tensor_rep(G, bar))
+        @test sum(ir.dim * ir.multiplicity for ir in d) == 9
+    end
 end

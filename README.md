@@ -157,10 +157,18 @@ eigvals(quadratic_casimir(T))   # → 3 (×8) and 0 (×1):  3 ⊗ 3̄ = 8 ⊕ 1
 
 tensor_rep(G, G)             # 3 ⊗ 3 = 3̄ ⊕ 6   (Casimir 4/3 on the 3̄, 10/3 on the 6)
 direct_sum_rep(G, bar)       # 3 ⊕ 3̄  (block diagonal)
+
+# decompose a (reducible) representation into irreducibles
+decompose(tensor_rep(G, bar))        # 1 ⊕ 8
+decompose(tensor_rep(G, G))          # 3 ⊕ 6   (the 3̄ and the 6)
+decompose(direct_sum_rep(G, G))      # one irrep of dim 3, multiplicity 2
+decompose(tensor_rep(adjoint_generators(3), G))   # 8 ⊗ 3 = 3 ⊕ 6 ⊕ 15
 ```
 
-The quadratic Casimir's eigenvalues read off the irreducible content of a tensor
-product — `weights`, `structure_constants`, `root_system` all work on any of these
+`decompose` uses the central quadratic Casimir to split the rep into invariant
+eigenspaces, and Schur's lemma (commutant dimension `= m²`) to read off each
+**multiplicity** — so `3 ⊕ 3` is reported as the **3** with multiplicity 2.
+`weights`, `structure_constants`, `root_system` all work on any of these
 representations.
 
 On the exponential: for a generic static matrix, **just use `exp`** —

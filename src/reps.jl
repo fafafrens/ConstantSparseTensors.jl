@@ -36,3 +36,59 @@ function direct_sum_rep(A::AbstractVector{<:AbstractMatrix}, B::AbstractVector{<
     @assert length(A) == length(B) "representations of the same algebra"
     return [cat(Matrix{ComplexF64}(a), Matrix{ComplexF64}(b); dims = (1, 2)) for (a, b) in zip(A, B)]
 end
+
+"""
+    Irrep
+
+One isotypic component from [`decompose`](@ref): an irreducible of dimension `dim`
+appearing with `multiplicity`, at quadratic-Casimir value `casimir`, spanning the
+columns of `basis` (an orthonormal `D × (dim·multiplicity)` block of the rep space).
+"""
+struct Irrep
+    dim::Int
+    multiplicity::Int
+    casimir::Float64
+    basis::Matrix{ComplexF64}
+end
+
+# dimension of the commutant of the generators restricted to the subspace P:
+# {M : [M, P†TᵃP] = 0 ∀a}. By Schur this is m² for m copies of one irreducible.
+function _commutant_dim(G, P; tol)
+    dW = size(P, 2)
+    Id = Matrix{ComplexF64}(I, dW, dW)
+    K = reduce(vcat, [(t = P' * Matrix(g) * P; kron(transpose(t), Id) - kron(Id, t)) for g in G])
+    return size(nullspace(K; atol = tol), 2)
+end
+
+"""
+    decompose(G; tol=1e-6) -> Vector{Irrep}
+
+Decompose the (possibly reducible) representation `G` into irreducibles. The
+quadratic Casimir `C₂ = Σ TᵃTᵃ` is central, so its eigenspaces are invariant; each
+distinct eigenvalue gives an isotypic component, and the multiplicity follows from
+the dimension of the commutant there (Schur: `dim = m²`). Multiplicity-free tensor
+products (e.g. `3⊗3̄ = 8⊕1`) are fully resolved; the method separates irreps by
+their Casimir value (it cannot split two *distinct* irreps that happen to share one).
+
+```julia
+decompose(tensor_rep(generators(3), conjugate_rep(generators(3))))  # 8 ⊕ 1
+decompose(direct_sum_rep(generators(3), generators(3)))             # 3 with multiplicity 2
+```
+"""
+function decompose(G::AbstractVector{<:AbstractMatrix}; tol = 1e-6)
+    F = eigen(Hermitian(Matrix(quadratic_casimir(G))))
+    D = length(F.values)
+    out = Irrep[]
+    i = 1
+    while i <= D
+        j = i
+        while j < D && abs(F.values[j + 1] - F.values[i]) < tol
+            j += 1
+        end
+        P = F.vectors[:, i:j]
+        mult = round(Int, sqrt(_commutant_dim(G, P; tol)))
+        push!(out, Irrep((j - i + 1) ÷ mult, mult, F.values[i], P))
+        i = j + 1
+    end
+    return out
+end
