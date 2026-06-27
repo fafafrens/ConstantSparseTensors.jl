@@ -71,7 +71,9 @@ are). This is the engine behind every group family — plug in `generators(N)`,
 `u_generators(N)`, `sp_generators(n)`, or your own. (For SO(N), whose generators
 are real antisymmetric rather than Hermitian, use [`so_structure_constants`](@ref).)
 """
-function structure_constants(G::AbstractVector{<:AbstractMatrix})
+# dense structure constants from a Hermitian generator basis (the plain Array, used
+# internally and by large algebras where the @generated sparse tensor is impractical)
+function structure_constants_dense(G::AbstractVector{<:AbstractMatrix})
     M = length(G)
     f = zeros(M, M, M)
     nrm = [real(tr(G[c] * G[c])) for c in 1:M]
@@ -81,8 +83,9 @@ function structure_constants(G::AbstractVector{<:AbstractMatrix})
             f[a, b, c] = real(-im * tr(G[c] * comm)) / nrm[c]
         end
     end
-    return ConstantSparseTensor(f)
+    return f
 end
+structure_constants(G::AbstractVector{<:AbstractMatrix}) = ConstantSparseTensor(structure_constants_dense(G))
 
 """
     u_generators(N) -> Vector{SMatrix{N,N,ComplexF64}}
@@ -105,12 +108,34 @@ For `X = xᵃTᵃ`, `Y = yᵃTᵃ`, this returns the components `c` of `[X,Y] = 
 """
 bracket(f::ConstantSparseTensor, x::SVector, y::SVector) = tdot(f, x, y)
 
-"""
-    casimir(f) -> ConstantSparseTensor
+# dense methods (plain runtime loops) — for large algebras whose `f` is kept dense
+# rather than as a @generated ConstantSparseTensor (e.g. g₂).
+bracket(f::AbstractArray{<:Number,3}, x::AbstractVector, y::AbstractVector) =
+    [sum(f[i, j, k] * x[j] * y[k] for j in axes(f, 2), k in axes(f, 3)) for i in axes(f, 1)]
 
-The adjoint Casimir `Cᵉᵍ = Σ_{ab} fᵃᵇᵉ fᵃᵇᵍ = N δᵉᵍ`, via [`contract`](@ref).
+"""
+    casimir(f) -> Matrix (dense `f`) or ConstantSparseTensor (sparse `f`)
+
+The adjoint Casimir `Cᵉᵍ = Σ_{ab} fᵃᵇᵉ fᵃᵇᵍ` (`= N δᵉᵍ` for su(N)). For a sparse `f`
+via [`contract`](@ref); for a dense `f` (large algebras) via plain loops.
 """
 casimir(f::ConstantSparseTensor) = contract(f, f, Val(((1, 1), (2, 2))))
+casimir(f::AbstractArray{<:Number,3}) =
+    [sum(f[a, b, e] * f[a, b, g] for a in axes(f, 1), b in axes(f, 2)) for e in axes(f, 3), g in axes(f, 3)]
+
+"""
+    jacobi_violation(f) -> Real
+
+The largest violation of the Jacobi identity `Σₑ (fᵃᵇᵉfᵉᶜᵈ + fᵇᶜᵉfᵉᵃᵈ + fᶜᵃᵉfᵉᵇᵈ)`
+over all `a,b,c,d` — `≈ 0` for genuine structure constants. Accepts a dense `f` or a
+[`ConstantSparseTensor`](@ref).
+"""
+function jacobi_violation(f::AbstractArray{<:Number,3})
+    M = size(f, 1)
+    return maximum(abs(sum(f[a, b, e] * f[e, c, d] + f[b, c, e] * f[e, a, d] + f[c, a, e] * f[e, b, d]
+                           for e in 1:M)) for a in 1:M, b in 1:M, c in 1:M, d in 1:M)
+end
+jacobi_violation(f::ConstantSparseTensor) = jacobi_violation(todense(f))
 
 """
     adjoint_generators(N) -> Vector{SMatrix{M,M,ComplexF64}}

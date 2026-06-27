@@ -99,7 +99,16 @@ The classical families are complete, and one generic primitive does all the work
 | Aₙ | su(N) | `structure_constants(N)` / `generators(N)` |
 | Bₙ, Dₙ | so(N) | `so_structure_constants(N)` / `so_generators(N)` |
 | Cₙ | usp(2n) | `sp_structure_constants(n)` / `sp_generators(n)` |
+| G₂ | g₂ = Aut(𝕆) | `g2_structure_constants()` / `g2_generators()` |
 | — | u(N) | `u_generators(N)` |
+
+**G₂** is built from the octonions (Cayley–Dickson) as the derivation algebra inside
+so(7), and `root_system(g2_generators())` recovers its Cartan matrix `[[2,-1],[-3,2]]`
+— the exceptional triple bond — straight from octonion multiplication. Its structure
+constants are kept **dense** (`g2_structure_constants() :: Array`): at 14 dimensions
+the `@generated` `contract` is impractical (compile cost ~`nnz²`), so the dense
+`casimir`/`bracket`/`jacobi_violation` methods are used. The engine stays for the
+*small* constant tensors it's good at.
 
 ```julia
 f = sp_structure_constants(2)            # USp(4) structure constants (dim 10)

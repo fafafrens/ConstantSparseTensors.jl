@@ -392,4 +392,29 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         # orthogonality: P_R onto V = R = fundamental is the identity
         @test norm(character_projector(G, G; samples = 4000) - I(3)) < 0.25
     end
+
+    @testset "G₂ (exceptional, dense structure constants)" begin
+        Random.seed!(0x6262)
+        G = g2_generators()
+        @test length(G) == 14 && size(G[1]) == (7, 7)
+        @test all(g -> g ≈ g', G)                              # Hermitian
+        c = octonion_structure_constants()
+        @test maximum(abs, c .+ permutedims(c, (2, 1, 3))) < 1e-12   # octonion 3-form antisym
+        f = g2_structure_constants()
+        @test f isa Array{Float64,3} && size(f) == (14, 14, 14)      # dense, not sparse
+        @test maximum(abs, f .+ permutedims(f, (2, 1, 3))) < 1e-9    # antisymmetric
+        @test jacobi_violation(f) < 1e-9                            # Jacobi (dense loops)
+        C = casimir(f)
+        @test C ≈ C[1, 1] * I(14) && C[1, 1] > 0                    # Casimir ∝ I
+        x = randn(14); y = randn(14)
+        @test bracket(f, x, y) ≈ -bracket(f, y, x)                  # dense bracket, antisymmetric
+        # root system recovers G₂: rank 2, 12 roots, det Cartan = 1 (the triple bond)
+        rs = root_system(G)
+        @test rs.rank == 2 && length(rs.roots) == 12 && round(Int, det(rs.cartan)) == 1
+        # the 7-dimensional representation is irreducible
+        @test [(ir.dim, ir.multiplicity) for ir in decompose(G)] == [(7, 1)]
+        # exp lands in SO(7) (G₂ ⊂ SO(7))
+        U = groupexp(algebra(SVector{14}(0.3 .* randn(14)), G))
+        @test U * U' ≈ I(7) && real(det(U)) ≈ 1
+    end
 end

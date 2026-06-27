@@ -61,7 +61,7 @@ rs.cartan        # [2 -1; -1 2]
 ```
 """
 function root_system(G::AbstractVector{<:AbstractMatrix}; tol = 1e-7)
-    fd = todense(structure_constants(G))
+    fd = structure_constants_dense(G)
     M = size(fd, 1)
     for _ in 1:50
         R0 = _adR(fd, randn(M))                       # generic Cartan element
@@ -99,7 +99,7 @@ representation dimension (weights repeated with multiplicity). For the **adjoint
 representation the nonzero weights are exactly the roots, with `rank` zero weights.
 """
 function weights(G::AbstractVector{<:AbstractMatrix}; tol = 1e-7)
-    fd = todense(structure_constants(G)); M = size(fd, 1)
+    fd = structure_constants_dense(G); M = size(fd, 1)
     H = nullspace(_adR(fd, randn(M)); atol = tol)              # CSA coefficients (M × rank)
     r = size(H, 2)
     Hmat = [sum(H[a, i] * G[a] for a in 1:M) for i in 1:r]     # CSA elements in the rep

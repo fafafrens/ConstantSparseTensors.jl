@@ -117,7 +117,7 @@ function clebsch_gordan(A::AbstractVector{<:AbstractMatrix},
                         B::AbstractVector{<:AbstractMatrix}; tol = 1e-6)
     T = tensor_rep(A, B)
     blocks = decompose(T; tol)
-    fd = todense(structure_constants(T)); M = length(T)
+    fd = structure_constants_dense(T); M = length(T)
     Hcoef = nullspace(_adR(fd, randn(M)); atol = tol)         # Cartan of the product rep
     Hmat = [sum(Hcoef[a, i] * T[a] for a in 1:M) for i in axes(Hcoef, 2)]
     cols = Matrix{ComplexF64}[]
