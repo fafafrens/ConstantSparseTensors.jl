@@ -162,12 +162,15 @@ direct_sum_rep(G, bar)       # 3 ⊕ 3̄  (block diagonal)
 decompose(tensor_rep(G, bar))        # 1 ⊕ 8
 decompose(tensor_rep(G, G))          # 3 ⊕ 6   (the 3̄ and the 6)
 decompose(direct_sum_rep(G, G))      # one irrep of dim 3, multiplicity 2
+decompose(direct_sum_rep(G, bar))    # 3 and 3̄: two inequivalent dim-3 irreps
 decompose(tensor_rep(adjoint_generators(3), G))   # 8 ⊗ 3 = 3 ⊕ 6 ⊕ 15
 ```
 
-`decompose` uses the central quadratic Casimir to split the rep into invariant
-eigenspaces, and Schur's lemma (commutant dimension `= m²`) to read off each
-**multiplicity** — so `3 ⊕ 3` is reported as the **3** with multiplicity 2.
+`decompose` works via the **commutant** `𝒞 = {M : [M,Tᵃ]=0} = ⊕ᵢ M_{mᵢ}(ℂ)`: a
+generic element of its center separates the isotypic components (distinguishing
+*all* inequivalent irreps — even a rep and its conjugate, which share a Casimir),
+and Schur's lemma (`dim 𝒞ᵢ = mᵢ²`) gives each **multiplicity**. So `3 ⊕ 3` is the
+**3** with multiplicity 2, while `3 ⊕ 3̄` is correctly two distinct dim-3 irreps.
 `weights`, `structure_constants`, `root_system` all work on any of these
 representations.
 

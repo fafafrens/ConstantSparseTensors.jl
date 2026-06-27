@@ -327,6 +327,9 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         @test dm(decompose(tensor_rep(G, bar))) == [(1, 1), (8, 1)]     # 3 ⊗ 3̄ = 1 ⊕ 8
         @test dm(decompose(tensor_rep(G, G))) == [(3, 1), (6, 1)]       # 3 ⊗ 3 = 3̄ ⊕ 6
         @test dm(decompose(direct_sum_rep(G, G))) == [(3, 2)]           # 3 ⊕ 3: multiplicity 2
+        # 3 and 3̄ are inequivalent but share C₂=4/3 — separated by the commutant center,
+        # and NOT merged into one mult-2 irrep (contrast with 3 ⊕ 3 above)
+        @test dm(decompose(direct_sum_rep(G, bar))) == [(3, 1), (3, 1)]
         @test dm(decompose(tensor_rep(adjoint_generators(3), G))) ==
               [(3, 1), (6, 1), (15, 1)]                                 # 8 ⊗ 3 = 3 ⊕ 6 ⊕ 15
         # components partition the representation dimension

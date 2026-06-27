@@ -51,32 +51,37 @@ struct Irrep
     basis::Matrix{ComplexF64}
 end
 
-# dimension of the commutant of the generators restricted to the subspace P:
-# {M : [M, P†TᵃP] = 0 ∀a}. By Schur this is m² for m copies of one irreducible.
-function _commutant_dim(G, P; tol)
-    dW = size(P, 2)
-    Id = Matrix{ComplexF64}(I, dW, dW)
-    K = reduce(vcat, [(t = P' * Matrix(g) * P; kron(transpose(t), Id) - kron(Id, t)) for g in G])
-    return size(nullspace(K; atol = tol), 2)
+# basis of the commutant  {M : [M, op] = 0 for every op in `ops`}, as D×D matrices.
+function _commutant(ops; tol)
+    D = size(first(ops), 1)
+    Id = Matrix{ComplexF64}(I, D, D)
+    K = reduce(vcat, [(o = Matrix(op); kron(transpose(o), Id) - kron(Id, o)) for op in ops])
+    ns = nullspace(K; atol = tol)
+    return [reshape(ns[:, k], D, D) for k in axes(ns, 2)]
 end
 
 """
     decompose(G; tol=1e-6) -> Vector{Irrep}
 
 Decompose the (possibly reducible) representation `G` into irreducibles. The
-quadratic Casimir `C₂ = Σ TᵃTᵃ` is central, so its eigenspaces are invariant; each
-distinct eigenvalue gives an isotypic component, and the multiplicity follows from
-the dimension of the commutant there (Schur: `dim = m²`). Multiplicity-free tensor
-products (e.g. `3⊗3̄ = 8⊕1`) are fully resolved; the method separates irreps by
-their Casimir value (it cannot split two *distinct* irreps that happen to share one).
+commutant `𝒞 = {M : [M,Tᵃ]=0}` is `⊕ᵢ M_{mᵢ}(ℂ)` (Schur), so a generic element of
+its **center** separates the isotypic components — distinguishing *all* inequivalent
+irreps, even ones with equal Casimir (e.g. a rep and its conjugate). The
+multiplicity `mᵢ` of each component then follows from the commutant dimension there
+(`= mᵢ²`). Fully general — no Casimir tower needed.
 
 ```julia
-decompose(tensor_rep(generators(3), conjugate_rep(generators(3))))  # 8 ⊕ 1
-decompose(direct_sum_rep(generators(3), generators(3)))             # 3 with multiplicity 2
+decompose(tensor_rep(generators(3), conjugate_rep(generators(3))))  # 1 ⊕ 8
+decompose(direct_sum_rep(generators(3), generators(3)))             # 3, multiplicity 2
+decompose(direct_sum_rep(generators(3), conjugate_rep(generators(3))))  # 3 and 3̄ (two dim-3 irreps)
 ```
 """
 function decompose(G::AbstractVector{<:AbstractMatrix}; tol = 1e-6)
-    F = eigen(Hermitian(Matrix(quadratic_casimir(G))))
+    Cb = _commutant(G; tol)                                   # commutant 𝒞
+    Zb = _commutant(vcat(collect(G), Cb); tol)               # center of 𝒞 (one dim / irrep type)
+    z = sum(randn(ComplexF64) * Z for Z in Zb)
+    F = eigen(Hermitian(Matrix(z + z')))                     # generic Hermitian central element
+    C2 = Matrix(quadratic_casimir(G))
     D = length(F.values)
     out = Irrep[]
     i = 1
@@ -85,9 +90,9 @@ function decompose(G::AbstractVector{<:AbstractMatrix}; tol = 1e-6)
         while j < D && abs(F.values[j + 1] - F.values[i]) < tol
             j += 1
         end
-        P = F.vectors[:, i:j]
-        mult = round(Int, sqrt(_commutant_dim(G, P; tol)))
-        push!(out, Irrep((j - i + 1) ÷ mult, mult, F.values[i], P))
+        P = F.vectors[:, i:j]                                 # one isotypic component
+        m = round(Int, sqrt(length(_commutant([P' * Matrix(g) * P for g in G]; tol))))
+        push!(out, Irrep((j - i + 1) ÷ m, m, real(tr(P' * C2 * P)) / (j - i + 1), P))
         i = j + 1
     end
     return out
