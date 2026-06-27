@@ -143,6 +143,26 @@ sp=Cₙ) straight from the generator matrices. `weights(G)` diagonalizes the Car
 subalgebra in the representation `G`; for the adjoint rep the nonzero weights are
 exactly the roots.
 
+### Representations
+
+The fundamental is `generators(N)`; build the others from it, then feed them to any
+of the tools above:
+
+```julia
+G   = generators(3)          # the 3
+bar = conjugate_rep(G)       # the 3̄  (−conj(Tᵃ); same Casimir, negated weights)
+
+T = tensor_rep(G, bar)       # 3 ⊗ 3̄  (Aᵃ⊗I + I⊗Bᵃ, dim 9)
+eigvals(quadratic_casimir(T))   # → 3 (×8) and 0 (×1):  3 ⊗ 3̄ = 8 ⊕ 1
+
+tensor_rep(G, G)             # 3 ⊗ 3 = 3̄ ⊕ 6   (Casimir 4/3 on the 3̄, 10/3 on the 6)
+direct_sum_rep(G, bar)       # 3 ⊕ 3̄  (block diagonal)
+```
+
+The quadratic Casimir's eigenvalues read off the irreducible content of a tensor
+product — `weights`, `structure_constants`, `root_system` all work on any of these
+representations.
+
 On the exponential: for a generic static matrix, **just use `exp`** —
 `StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
 Cayley–Hamilton series was benchmarked to be *slower* for `N ≠ 2, 3`. The only

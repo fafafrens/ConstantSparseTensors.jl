@@ -295,4 +295,28 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         nz = sort(round.(norm.([w for w in ws if norm(w) > 1e-7]), digits = 4))
         @test nz == sort(round.(norm.(root_system(G).roots), digits = 4))  # nonzero weights = roots
     end
+
+    @testset "representations (3, 3̄, tensor products)" begin
+        G = generators(3)                                       # the 3
+        bar = conjugate_rep(G)                                  # the 3̄
+        @test length(bar) == 8 && size(bar[1]) == (3, 3)
+        @test all(g -> g ≈ g', bar)                            # Hermitian
+        @test todense(structure_constants(bar)) ≈ todense(structure_constants(G))  # same algebra
+        @test quadratic_casimir(bar) ≈ (4 / 3) * I(3)          # C₂(3̄) = C₂(3)
+
+        # 3 ⊗ 3̄ = 8 ⊕ 1  (Casimir eigenvalues 3 on the octet, 0 on the singlet)
+        T = tensor_rep(G, bar)
+        @test length(T) == 8 && size(T[1]) == (9, 9)
+        @test all(g -> g ≈ g', T)
+        @test sort(real.(eigvals(quadratic_casimir(T)))) ≈ vcat(0.0, fill(3.0, 8)) atol = 1e-7
+
+        # 3 ⊗ 3 = 3̄ ⊕ 6  (C₂(3̄)=4/3, C₂(6)=10/3)
+        @test sort(real.(eigvals(quadratic_casimir(tensor_rep(G, G))))) ≈
+              vcat(fill(4 / 3, 3), fill(10 / 3, 6)) atol = 1e-7
+
+        # direct sum 3 ⊕ 3̄: block-diagonal, C₂ = (4/3) I₆
+        S = direct_sum_rep(G, bar)
+        @test size(S[1]) == (6, 6)
+        @test quadratic_casimir(S) ≈ (4 / 3) * I(6)
+    end
 end

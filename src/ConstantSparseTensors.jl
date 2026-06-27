@@ -31,7 +31,7 @@ generator basis, so custom or exceptional groups plug straight in.
 module ConstantSparseTensors
 
 using StaticArrays
-using LinearAlgebra: tr, det, I, cross, dot, nullspace, eigen, norm, Hermitian
+using LinearAlgebra: tr, det, I, cross, dot, nullspace, eigen, eigvals, norm, Hermitian, kron
 
 export ConstantSparseTensor, nnz, tdot, contract, todense
 export LeviCivita, lc_sign
@@ -41,6 +41,7 @@ export so_generators, so_structure_constants, so_algebra, so2_exp, so3_exp, so4_
 export sp_generators, sp_structure_constants, symplectic_form
 export quadratic_casimir, dynkin_index, killing_form, adjoint_action
 export root_system, RootSystem, weights, highest_weight
+export conjugate_rep, tensor_rep, direct_sum_rep
 
 include("tensor.jl")
 include("levicivita.jl")
@@ -50,5 +51,6 @@ include("sp.jl")
 include("action.jl")
 include("invariants.jl")
 include("roots.jl")
+include("reps.jl")
 
 end # module
