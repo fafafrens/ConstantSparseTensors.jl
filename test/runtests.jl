@@ -374,4 +374,22 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         @test norm(haar_average(T; samples = 3000) - P) < 0.1
         @test norm(haar_average(G; samples = 3000)) < 0.1   # nontrivial irrep → 0
     end
+
+    @testset "Haar measure & character projectors" begin
+        Random.seed!(0x9090)
+        G = generators(3)
+        V = tensor_rep(G, conjugate_rep(G))                 # 3 ⊗ 3̄ = 1 ⊕ 8
+        U = haar_sample(G)
+        @test U' * U ≈ I(3)                                 # a group element (unitary)
+        # character projector onto the trivial rep = invariant projector (low variance)
+        P1 = character_projector(V, trivial_rep(G); samples = 4000)
+        @test norm(P1 - invariant_projector(V)) < 0.15
+        @test abs(real(tr(P1)) - 1) < 0.3                   # rank 1 (the singlet)
+        # onto the octet (R = adjoint): rank 8, and P₁ + P₈ = I
+        P8 = character_projector(V, adjoint_generators(3); samples = 4000)
+        @test abs(real(tr(P8)) - 8) < 0.6
+        @test norm((P1 + P8) - I(9)) < 0.6                  # 1 ⊕ 8 covers everything
+        # orthogonality: P_R onto V = R = fundamental is the identity
+        @test norm(character_projector(G, G; samples = 4000) - I(3)) < 0.25
+    end
 end

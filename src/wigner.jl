@@ -43,3 +43,56 @@ function haar_average(G::AbstractVector{<:AbstractMatrix}; samples = 3000, steps
     end
     return acc ./ samples
 end
+
+"""
+    haar_sample(G; steps=12) -> Matrix
+
+A Haar-random group element in the representation `G`, drawn by a random walk
+(product of `steps` random exponentials). Exposes the Haar measure: averaging any
+function of `haar_sample(G)` estimates its Haar integral.
+"""
+function haar_sample(G::AbstractVector{<:AbstractMatrix}; steps = 12)
+    M = length(G); D = size(G[1], 1)
+    U = Matrix{ComplexF64}(I, D, D)
+    for _ in 1:steps
+        U = groupexp(algebra(SVector{M}(randn(M)), G)) * U
+    end
+    return U
+end
+
+"""
+    trivial_rep(G) -> Vector
+
+The trivial (1-dimensional) representation of the same algebra as `G`: every
+generator is zero. `character_projector(V, trivial_rep(V))` is
+[`invariant_projector`](@ref).
+"""
+trivial_rep(G::AbstractVector{<:AbstractMatrix}) = [zeros(ComplexF64, 1, 1) for _ in G]
+
+"""
+    character_projector(V, R; samples=4000, steps=12) -> Matrix
+
+The projector onto the `R`-isotypic component of the representation `V`, via the
+character projection `P_R = d_R ∫_G conj(χ_R(g)) ρ_V(g) dg`, with `d_R = dim R` and
+`χ_R(g) = Tr ρ_R(g)`. Estimated by Monte-Carlo over a shared Haar random walk
+evaluated in both reps. Generalizes [`invariant_projector`](@ref) (the case where
+`R` is trivial, `χ_R ≡ 1`).
+"""
+function character_projector(V::AbstractVector{<:AbstractMatrix},
+                             R::AbstractVector{<:AbstractMatrix}; samples = 4000, steps = 12)
+    M = length(V)
+    @assert length(R) == M "V and R must be representations of the same algebra"
+    DV = size(V[1], 1); dR = size(R[1], 1)
+    acc = zeros(ComplexF64, DV, DV)
+    for _ in 1:samples
+        UV = Matrix{ComplexF64}(I, DV, DV)
+        UR = Matrix{ComplexF64}(I, dR, dR)
+        for _ in 1:steps
+            θ = SVector{M}(randn(M))
+            UV = groupexp(algebra(θ, V)) * UV
+            UR = groupexp(algebra(θ, R)) * UR        # same g, evaluated in R
+        end
+        acc .+= conj(tr(UR)) * UV                     # conj(χ_R(g)) · ρ_V(g)
+    end
+    return (dR / samples) * acc
+end

@@ -208,6 +208,19 @@ invariant_projector(generators(3))           # 0: the 3 has no invariant
 is the Monte-Carlo group average that converges to it — the averaging theorem made
 into a test.
 
+Exposing the measure (`haar_sample`) gives projectors onto **any** irrep via the
+**character projection** `P_R = d_R ∫_G conj(χ_R(g)) ρ_V(g) dg` (Peter–Weyl):
+
+```julia
+V = tensor_rep(generators(3), conjugate_rep(generators(3)))   # 3 ⊗ 3̄ = 1 ⊕ 8
+character_projector(V, adjoint_generators(3))   # projector onto the octet (rank 8)
+character_projector(V, trivial_rep(generators(3)))  # the singlet  (= invariant_projector)
+# the two sum to the identity:  P₈ + P₁ = I₉
+```
+
+`character_projector(V, R)` weights the Haar average by the character of `R` — so the
+invariant projector is just the `R = `trivial case (`χ ≡ 1`).
+
 On the exponential: for a generic static matrix, **just use `exp`** —
 `StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
 Cayley–Hamilton series was benchmarked to be *slower* for `N ≠ 2, 3`. The only
