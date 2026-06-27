@@ -417,4 +417,28 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         U = groupexp(algebra(SVector{14}(0.3 .* randn(14)), G))
         @test U * U' ≈ I(7) && real(det(U)) ≈ 1
     end
+
+    @testset "E₆ (Chevalley construction)" begin
+        Random.seed!(0x00E6)
+        A = e6_cartan_matrix()
+        @test round(Int, det(A)) == 3                       # E₆ Cartan determinant
+        roots = e6_roots()
+        @test length(roots) == 72                           # E₆ root count
+        @test all(dot(α, A * α) == 2 for α in roots)        # all roots length² = 2
+        C = e6_structure_constants()
+        @test size(C) == (78, 78, 78)                       # dim E₆ = 78
+        @test maximum(abs(C[a, b, c] + C[b, a, c]) for a in 1:78, b in 1:78, c in 1:78) == 0  # antisym
+        # Jacobi (sampled — the full check is 78⁵): certifies the sign cocycle
+        D = 78; viol = 0.0
+        for _ in 1:5000
+            a, b, c, e = rand(1:D, 4)
+            s = sum(C[a, b, d] * C[d, c, e] + C[b, c, d] * C[d, a, e] + C[c, a, d] * C[d, b, e] for d in 1:D)
+            viol = max(viol, abs(s))
+        end
+        @test viol < 1e-10
+        # the generic builder gives the right dimension for other simply-laced types
+        @test size(first(chevalley_structure_constants([2 -1; -1 2])), 1) == 8           # A₂ = su(3)
+        @test size(first(chevalley_structure_constants(
+                  [2 -1 0 0; -1 2 -1 -1; 0 -1 2 0; 0 -1 0 2])), 1) == 28                  # D₄
+    end
 end

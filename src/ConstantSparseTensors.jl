@@ -38,6 +38,7 @@ export LeviCivita, lc_sign
 export gellmann, generators, u_generators, structure_constants, structure_constants_dense
 export bracket, casimir, jacobi_violation, adjoint_generators
 export g2_generators, g2_structure_constants, octonion_structure_constants
+export chevalley_structure_constants, e6_cartan_matrix, e6_structure_constants, e6_roots
 export algebra, groupexp, expv, su2_exp, mp_exp
 export so_generators, so_structure_constants, so_algebra, so2_exp, so3_exp, so4_exp
 export sp_generators, sp_structure_constants, symplectic_form
@@ -57,5 +58,6 @@ include("roots.jl")
 include("reps.jl")
 include("wigner.jl")
 include("g2.jl")
+include("e6.jl")
 
 end # module

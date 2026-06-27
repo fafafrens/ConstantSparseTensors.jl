@@ -110,6 +110,21 @@ the `@generated` `contract` is impractical (compile cost ~`nnz²`), so the dense
 `casimir`/`bracket`/`jacobi_violation` methods are used. The engine stays for the
 *small* constant tensors it's good at.
 
+**E₆** (dim 78) is built by the **Chevalley construction** — `chevalley_structure_constants(A)`
+takes any simply-laced Cartan matrix, generates its root system, fixes the
+structure-constant signs with a 2-cocycle on the root lattice, and assembles `f` in
+the Cartan–Weyl basis. The result satisfies Jacobi (`jacobi_violation ≈ 0`), the
+oracle for the signs:
+
+```julia
+A = e6_cartan_matrix()              # det 3, the E₆ Cartan matrix
+length(e6_roots())                  # 72 roots, all length² = 2
+C = e6_structure_constants()        # 78×78×78, jacobi_violation(C) ≈ 0
+chevalley_structure_constants(A)    # works for any simply-laced A (Aₙ, Dₙ, E₆/₇/₈)
+```
+
+Same builder gives E₇/E₈ (and the classical Aₙ/Dₙ) — only the Cartan matrix changes.
+
 ```julia
 f = sp_structure_constants(2)            # USp(4) structure constants (dim 10)
 G = sp_generators(2)
