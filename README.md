@@ -174,6 +174,21 @@ and Schur's lemma (`dim 𝒞ᵢ = mᵢ²`) gives each **multiplicity**. So `3 �
 `weights`, `structure_constants`, `root_system` all work on any of these
 representations.
 
+### Clebsch–Gordan
+
+The invariant-subspace bases from `decompose` are the **Clebsch–Gordan coefficients**
+— the unitary coupling the product into irreducibles:
+
+```julia
+U, blocks = clebsch_gordan(generators(2), generators(2))   # 2 ⊗ 2 = 3 ⊕ 1
+# U block-diagonalizes every Aᵃ⊗I + I⊗Bᵃ; columns = coupled states in the product basis.
+# the singlet column is (|↑↓⟩ − |↓↑⟩)/√2  →  magnitudes 0, 1/√2, 1/√2, 0
+```
+
+Determined up to the unavoidable unitary freedom inside each irrep (phase /
+multiplicity / weight-basis convention); the convention-independent quantities (the
+irrep content, multiplicities, and e.g. the singlet's `1/√2`) are exact.
+
 On the exponential: for a generic static matrix, **just use `exp`** —
 `StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
 Cayley–Hamilton series was benchmarked to be *slower* for `N ≠ 2, 3`. The only

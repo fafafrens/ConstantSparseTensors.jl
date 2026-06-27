@@ -41,7 +41,7 @@ export so_generators, so_structure_constants, so_algebra, so2_exp, so3_exp, so4_
 export sp_generators, sp_structure_constants, symplectic_form
 export quadratic_casimir, dynkin_index, killing_form, adjoint_action
 export root_system, RootSystem, weights, highest_weight
-export conjugate_rep, tensor_rep, direct_sum_rep, decompose, Irrep
+export conjugate_rep, tensor_rep, direct_sum_rep, decompose, Irrep, clebsch_gordan
 
 include("tensor.jl")
 include("levicivita.jl")

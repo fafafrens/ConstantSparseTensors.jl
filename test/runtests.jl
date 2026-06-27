@@ -336,4 +336,25 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         d = decompose(tensor_rep(G, bar))
         @test sum(ir.dim * ir.multiplicity for ir in d) == 9
     end
+
+    @testset "Clebsch–Gordan" begin
+        A = generators(2)
+        U, blocks = clebsch_gordan(A, A)                       # 2 ⊗ 2 = 3 ⊕ 1
+        @test U' * U ≈ I(4)                                    # unitary coupling
+        @test sort([ir.dim for ir in blocks]) == [1, 3]
+        # full block-diagonalization: distinct irrep subspaces don't mix under any generator
+        T = tensor_rep(A, A)
+        for g in T, a in eachindex(blocks), b in eachindex(blocks)
+            a == b && continue
+            @test norm(blocks[a].basis' * g * blocks[b].basis) < 1e-8
+        end
+        # the singlet is (|↑↓⟩ − |↓↑⟩)/√2 up to phase: magnitudes 0, 1/√2, 1/√2, 0
+        sing = blocks[findfirst(ir -> ir.dim == 1, blocks)].basis[:, 1]
+        @test sort(abs.(sing)) ≈ [0, 0, 1 / √2, 1 / √2] atol = 1e-8
+        # SU(3): 3 ⊗ 3̄ couples unitarily into 1 ⊕ 8
+        G = generators(3)
+        U3, bl3 = clebsch_gordan(G, conjugate_rep(G))
+        @test U3' * U3 ≈ I(9)
+        @test sort([ir.dim for ir in bl3]) == [1, 8]
+    end
 end

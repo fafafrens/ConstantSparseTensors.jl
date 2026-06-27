@@ -97,3 +97,35 @@ function decompose(G::AbstractVector{<:AbstractMatrix}; tol = 1e-6)
     end
     return out
 end
+
+"""
+    clebsch_gordan(A, B; tol=1e-6) -> (U, blocks)
+
+The Clebsch–Gordan transform coupling `A ⊗ B` into irreducibles: a unitary `U`
+whose columns are the coupled basis states in the product basis — i.e. the CG
+coefficients — block-diagonalizing every generator `Aᵃ⊗I + I⊗Bᵃ`. `blocks` is the
+[`decompose`](@ref) of `A ⊗ B`. Columns are grouped by block and put in a weight
+basis within each, but are only fixed up to the unitary freedom inside an irrep
+(phase / multiplicity convention).
+
+```julia
+U, blocks = clebsch_gordan(generators(2), generators(2))   # 2 ⊗ 2 = 3 ⊕ 1
+# the singlet column is (|↑↓⟩−|↓↑⟩)/√2  (magnitudes 0, 1/√2, 1/√2, 0)
+```
+"""
+function clebsch_gordan(A::AbstractVector{<:AbstractMatrix},
+                        B::AbstractVector{<:AbstractMatrix}; tol = 1e-6)
+    T = tensor_rep(A, B)
+    blocks = decompose(T; tol)
+    fd = todense(structure_constants(T)); M = length(T)
+    Hcoef = nullspace(_adR(fd, randn(M)); atol = tol)         # Cartan of the product rep
+    Hmat = [sum(Hcoef[a, i] * T[a] for a in 1:M) for i in axes(Hcoef, 2)]
+    cols = Matrix{ComplexF64}[]
+    for ir in blocks
+        P = ir.basis
+        Hg = sum(randn() * (P' * Hmat[i] * P) for i in eachindex(Hmat))   # generic Cartan element
+        V = eigen(Hermitian(Matrix(Hg))).vectors                          # weight basis within P
+        push!(cols, P * V)
+    end
+    return hcat(cols...), blocks
+end
