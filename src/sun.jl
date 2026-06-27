@@ -146,6 +146,7 @@ which is already allocation-free and, for a generic static matrix, faster than a
 hand-rolled series. (A general Cayley–Hamilton expansion was benchmarked and is
 *not* worth it — `exp` wins for `N ≠ 2, 3`.)
 """
+groupexp(X::AbstractMatrix) = exp(X)
 groupexp(X::SMatrix) = exp(X)
 # split off the trace (u(1) part) so the closed forms — which assume a traceless,
 # unimodular generator — stay correct for u(N)/general matrices, not just su(N).

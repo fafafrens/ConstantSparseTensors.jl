@@ -189,6 +189,25 @@ Determined up to the unavoidable unitary freedom inside each irrep (phase /
 multiplicity / weight-basis convention); the convention-independent quantities (the
 irrep content, multiplicities, and e.g. the singlet's `1/√2`) are exact.
 
+### Wigner D-matrices & the Haar average
+
+`wigner(G, θ)` is the representation of a group element `exp(i θᵃ Tᵃ)` — i.e. `ρ(g)`.
+Averaging it over the group (Haar measure) gives the **projector onto the invariant
+subspace** (`∫_G ρ(g) dg = ∩ₐ ker Tᵃ`):
+
+```julia
+W = wigner(generators(3), randn(8))          # a 3×3 SU(3) Wigner matrix (unitary)
+
+T = tensor_rep(generators(3), conjugate_rep(generators(3)))   # 3 ⊗ 3̄
+P = invariant_projector(T)                   # projector onto the singlet, rank 1, P² = P
+haar_average(T) ≈ P                          # Monte-Carlo ∫ρ(g)dg → the projector
+invariant_projector(generators(3))           # 0: the 3 has no invariant
+```
+
+`invariant_projector` is exact (the common kernel of the generators); `haar_average`
+is the Monte-Carlo group average that converges to it — the averaging theorem made
+into a test.
+
 On the exponential: for a generic static matrix, **just use `exp`** —
 `StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
 Cayley–Hamilton series was benchmarked to be *slower* for `N ≠ 2, 3`. The only

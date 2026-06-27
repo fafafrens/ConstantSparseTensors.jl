@@ -357,4 +357,21 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         @test U3' * U3 ≈ I(9)
         @test sort([ir.dim for ir in bl3]) == [1, 8]
     end
+
+    @testset "Wigner D-matrix & Haar average" begin
+        Random.seed!(0x5151)
+        G = generators(3); θ = randn(8)
+        W = wigner(G, θ)
+        @test W' * W ≈ I(3)                                 # unitary
+        @test W ≈ exp(algebra(SVector{8}(θ), G))            # = ρ(exp(iθ·T))
+        # invariant projector: idempotent, Hermitian, rank = trivial multiplicity
+        T = tensor_rep(G, conjugate_rep(G))                 # 3 ⊗ 3̄ ⊃ one singlet
+        P = invariant_projector(T)
+        @test P^2 ≈ P && P' ≈ P
+        @test round(Int, real(tr(P))) == 1
+        @test invariant_projector(G) ≈ zeros(3, 3)          # the 3 has no invariant
+        # ∫_G ρ(g) dg converges to the projector (the averaging theorem)
+        @test norm(haar_average(T; samples = 3000) - P) < 0.1
+        @test norm(haar_average(G; samples = 3000)) < 0.1   # nontrivial irrep → 0
+    end
 end
