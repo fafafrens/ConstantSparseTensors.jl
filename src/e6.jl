@@ -101,3 +101,48 @@ The 72 roots of E₆ as integer coefficient vectors in the simple-root basis (al
 length² = 2).
 """
 e6_roots() = last(chevalley_structure_constants(e6_cartan_matrix()))
+
+# Compact Hermitian adjoint generators from split Cartan–Weyl structure constants:
+# pass to the compact real form {i h_j, e_α+e_{-α}, i(e_α-e_{-α})} (the f_α=-e_{-α}
+# relabeling matches the Chevalley sign convention), orthonormalize under −Killing,
+# then Gᵃ_{bc} = −i f_ortho[a,b,c] is Hermitian. roots are ordered [pos; -pos].
+function _compact_hermitian_generators(C, n, npos)
+    D = size(C, 1)
+    P = zeros(ComplexF64, D, D)
+    for j in 1:n; P[j, j] = im; end                          # i h_j
+    col = n
+    for k in 1:npos
+        eα = n + k; emα = n + npos + k
+        col += 1; P[eα, col] = 1;  P[emα, col] = 1           # e_α + e_{-α}
+        col += 1; P[eα, col] = im; P[emα, col] = -im         # i(e_α - e_{-α})
+    end
+    Pinv = inv(P)
+    fc = zeros(ComplexF64, D, D, D)                          # compact structure constants
+    for r in 1:D
+        Mr = transpose(P) * C[:, :, r] * P
+        for c in 1:D; @views fc[:, :, c] .+= Pinv[c, r] .* Mr; end
+    end
+    fr = real(fc)
+    ad = [permutedims(fr[a, :, :], (2, 1)) for a in 1:D]
+    K = [tr(ad[a] * ad[b]) for a in 1:D, b in 1:D]           # Killing form (neg. definite)
+    Eg = eigen(Symmetric(-K))
+    S = Eg.vectors * Diagonal(sqrt.(Eg.values)) * Eg.vectors'
+    Sinv = inv(S)
+    tmp = similar(fr)
+    for r in 1:D; tmp[:, :, r] = Sinv' * fr[:, :, r] * Sinv; end
+    fo = zeros(D, D, D)                                       # orthonormal ⇒ totally antisym
+    for r in 1:D, c in 1:D; @views fo[:, :, c] .+= S[r, c] .* tmp[:, :, r]; end
+    return [ComplexF64[-im * fo[a, b, c] for b in 1:D, c in 1:D] for a in 1:D]
+end
+
+"""
+    e6_generators() -> Vector{Matrix{ComplexF64}}
+
+The 78 Hermitian generators of E₆ in its adjoint representation (the compact real
+form, orthonormalized under the Killing form). `root_system(e6_generators())`
+recovers the E₆ Cartan matrix; `casimir`, `decompose`, `weights` all apply.
+"""
+function e6_generators()
+    C, roots = chevalley_structure_constants(e6_cartan_matrix())
+    return _compact_hermitian_generators(C, 6, length(roots) ÷ 2)
+end

@@ -121,9 +121,16 @@ A = e6_cartan_matrix()              # det 3, the E₆ Cartan matrix
 length(e6_roots())                  # 72 roots, all length² = 2
 C = e6_structure_constants()        # 78×78×78, jacobi_violation(C) ≈ 0
 chevalley_structure_constants(A)    # works for any simply-laced A (Aₙ, Dₙ, E₆/₇/₈)
+
+G = e6_generators()                 # 78 compact Hermitian adjoint generators
+root_system(G).cartan               # recovers the E₆ Cartan (rank 6, 72 roots, det 3)
 ```
 
-Same builder gives E₇/E₈ (and the classical Aₙ/Dₙ) — only the Cartan matrix changes.
+`e6_generators()` passes the split Cartan–Weyl form to the **compact real form**
+`{i hⱼ, e_α+e_{-α}, i(e_α−e_{-α})}` and orthonormalizes under the Killing form, giving
+Hermitian adjoint generators — so the whole toolkit (`root_system`, `casimir`,
+`weights`) applies, and `root_system` rediscovers E₆ from the matrices. Same builder
+gives E₇/E₈ (and the classical Aₙ/Dₙ) — only the Cartan matrix changes.
 
 ```julia
 f = sp_structure_constants(2)            # USp(4) structure constants (dim 10)

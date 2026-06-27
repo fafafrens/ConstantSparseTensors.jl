@@ -440,5 +440,11 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         @test size(first(chevalley_structure_constants([2 -1; -1 2])), 1) == 8           # A₂ = su(3)
         @test size(first(chevalley_structure_constants(
                   [2 -1 0 0; -1 2 -1 -1; 0 -1 2 0; 0 -1 0 2])), 1) == 28                  # D₄
+        # compact Hermitian adjoint generators → root_system recovers the E₆ Cartan
+        G = e6_generators()
+        @test length(G) == 78 && size(G[1]) == (78, 78)
+        @test all(g -> maximum(abs, g - g') < 1e-9, G)                       # Hermitian
+        rs = root_system(G)
+        @test rs.rank == 6 && length(rs.roots) == 72 && round(Int, det(rs.cartan)) == 3
     end
 end
