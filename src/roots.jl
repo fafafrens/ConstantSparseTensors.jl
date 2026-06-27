@@ -88,3 +88,35 @@ function root_system(G::AbstractVector{<:AbstractMatrix}; tol = 1e-7)
     end
     error("root-system extraction failed (degenerate Cartan element)")
 end
+
+"""
+    weights(G; tol=1e-7) -> Vector{Vector{Float64}}
+
+The weights of the representation given by the Hermitian generators `G`: the
+simultaneous eigenvalues of a Cartan subalgebra acting on the representation space.
+Returns one length-`rank` vector per basis state, so `length(weights(G))` is the
+representation dimension (weights repeated with multiplicity). For the **adjoint**
+representation the nonzero weights are exactly the roots, with `rank` zero weights.
+"""
+function weights(G::AbstractVector{<:AbstractMatrix}; tol = 1e-7)
+    fd = todense(structure_constants(G)); M = size(fd, 1)
+    H = nullspace(_adR(fd, randn(M)); atol = tol)              # CSA coefficients (M × rank)
+    r = size(H, 2)
+    Hmat = [sum(H[a, i] * G[a] for a in 1:M) for i in 1:r]     # CSA elements in the rep
+    D = size(G[1], 1)
+    Hc = sum(randn() * Hmat[i] for i in 1:r)                   # generic combination
+    V = eigen(Hermitian(Matrix(Hc))).vectors                  # common eigenvectors
+    return [[real(dot(view(V, :, k), Hmat[i], view(V, :, k))) for i in 1:r] for k in 1:D]
+end
+
+"""
+    highest_weight(G; tol=1e-7) -> Vector{Float64}
+
+The highest weight of the representation, relative to a generic positive system
+(the weight maximizing a generic regular linear functional).
+"""
+function highest_weight(G::AbstractVector{<:AbstractMatrix}; tol = 1e-7)
+    ws = weights(G; tol)
+    ℓ = randn(length(first(ws)))
+    return ws[argmax([dot(ℓ, w) for w in ws])]
+end

@@ -275,4 +275,24 @@ const ALLOC_CHECK = VERSION >= v"1.12"
                       for i in 1:r, j in 1:r)
         end
     end
+
+    @testset "weights of a representation" begin
+        Random.seed!(0xBEEF)
+        # fundamental su(N): N distinct weights, summing to zero, none zero
+        for N in 2:4
+            ws = weights(generators(N))
+            @test length(ws) == N                                       # = dim(fundamental)
+            @test norm(sum(ws)) < 1e-8                                  # traceless ⇒ Σ weights = 0
+            @test count(w -> norm(w) < 1e-7, ws) == 0                   # no zero weight
+            @test length(unique(w -> round.(w, digits = 6), ws)) == N   # all distinct
+            @test length(highest_weight(generators(N))) == N - 1        # a rank-vector
+        end
+        # adjoint rep: weights = roots ∪ {0}^rank
+        G = adjoint_generators(3)
+        ws = weights(G)
+        @test length(ws) == 8
+        @test count(w -> norm(w) < 1e-7, ws) == 2                       # zero-weights = rank
+        nz = sort(round.(norm.([w for w in ws if norm(w) > 1e-7]), digits = 4))
+        @test nz == sort(round.(norm.(root_system(G).roots), digits = 4))  # nonzero weights = roots
+    end
 end

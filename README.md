@@ -129,12 +129,19 @@ rs = root_system(generators(3))          # su(3) = A₂
 rs.rank          # 2
 length(rs.roots) # 6
 rs.cartan        # [2 -1; -1 2]
+
+# weights of a representation (simultaneous Cartan eigenvalues)
+weights(generators(3))                   # 3 weights of the fundamental
+highest_weight(generators(3))
+weights(adjoint_generators(3))           # 8 weights = the 6 roots + 2 zero-weights
 ```
 
 `root_system` finds a Cartan subalgebra (centralizer of a generic element),
 reads the **roots** off the adjoint eigenvectors, and returns the **simple roots**
 and **Cartan matrix** — rediscovering the classification (su(N)=Aₙ, so=Bₙ/Dₙ,
-sp=Cₙ) straight from the generator matrices.
+sp=Cₙ) straight from the generator matrices. `weights(G)` diagonalizes the Cartan
+subalgebra in the representation `G`; for the adjoint rep the nonzero weights are
+exactly the roots.
 
 On the exponential: for a generic static matrix, **just use `exp`** —
 `StaticArrays` already exponentiates `SMatrix` allocation-free, and a hand-rolled
