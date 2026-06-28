@@ -468,4 +468,18 @@ const ALLOC_CHECK = VERSION >= v"1.12"
             @test viol < 1e-10
         end
     end
+
+    @testset "F₄ (E₆ folding)" begin
+        Random.seed!(0x00F4)
+        @test round(Int, det(f4_cartan_matrix())) == 1
+        f4 = f4_structure_constants()
+        @test size(f4) == (52, 52, 52)
+        @test jacobi_violation(f4) < 1e-9                       # inherited from E₆
+        @test maximum(abs(f4[a, b, c] + f4[b, a, c]) for a in 1:52, b in 1:52, c in 1:52) < 1e-12
+        G = f4_generators()
+        @test length(G) == 52 && all(g -> maximum(abs, g - g') < 1e-9, G)   # Hermitian
+        rs = root_system(G)
+        @test rs.rank == 4 && length(rs.roots) == 48 && round(Int, det(rs.cartan)) == 1
+        @test any(rs.cartan[i, j] == -2 for i in 1:4, j in 1:4)             # non-simply-laced double bond
+    end
 end

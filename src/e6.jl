@@ -102,11 +102,12 @@ length² = 2).
 """
 e6_roots() = last(chevalley_structure_constants(e6_cartan_matrix()))
 
-# Compact Hermitian adjoint generators from split Cartan–Weyl structure constants:
-# pass to the compact real form {i h_j, e_α+e_{-α}, i(e_α-e_{-α})} (the f_α=-e_{-α}
-# relabeling matches the Chevalley sign convention), orthonormalize under −Killing,
-# then Gᵃ_{bc} = −i f_ortho[a,b,c] is Hermitian. roots are ordered [pos; -pos].
-function _compact_hermitian_generators(C, n, npos)
+# Compact real form of split Cartan–Weyl structure constants: pass to the basis
+# {i h_j, e_α+e_{-α}, i(e_α-e_{-α})} (the f_α=-e_{-α} relabeling matches the Chevalley
+# sign convention), orthonormalize under −Killing. Returns the totally-antisymmetric
+# compact structure constants `fo` and `B` = the CW coords of the compact basis (so
+# an automorphism in CW coords transforms as B⁻¹ Θ B). roots are ordered [pos; -pos].
+function _compact_form(C, n, npos)
     D = size(C, 1)
     P = zeros(ComplexF64, D, D)
     for j in 1:n; P[j, j] = im; end                          # i h_j
@@ -117,7 +118,7 @@ function _compact_hermitian_generators(C, n, npos)
         col += 1; P[eα, col] = im; P[emα, col] = -im         # i(e_α - e_{-α})
     end
     Pinv = inv(P)
-    fc = zeros(ComplexF64, D, D, D)                          # compact structure constants
+    fc = zeros(ComplexF64, D, D, D)
     for r in 1:D
         Mr = transpose(P) * C[:, :, r] * P
         for c in 1:D; @views fc[:, :, c] .+= Pinv[c, r] .* Mr; end
@@ -132,8 +133,13 @@ function _compact_hermitian_generators(C, n, npos)
     for r in 1:D; tmp[:, :, r] = Sinv' * fr[:, :, r] * Sinv; end
     fo = zeros(D, D, D)                                       # orthonormal ⇒ totally antisym
     for r in 1:D, c in 1:D; @views fo[:, :, c] .+= S[r, c] .* tmp[:, :, r]; end
-    return [ComplexF64[-im * fo[a, b, c] for b in 1:D, c in 1:D] for a in 1:D]
+    return fo, P * Sinv
 end
+
+# Hermitian adjoint generators Gᵃ_{bc} = −i f_ortho[a,b,c] from compact constants.
+_hermitian_adjoint(fo) = (D = size(fo, 1);
+    [ComplexF64[-im * fo[a, b, c] for b in 1:D, c in 1:D] for a in 1:D])
+_compact_hermitian_generators(C, n, npos) = _hermitian_adjoint(first(_compact_form(C, n, npos)))
 
 """
     e6_generators() -> Vector{Matrix{ComplexF64}}

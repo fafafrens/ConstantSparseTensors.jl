@@ -138,6 +138,18 @@ compact `e8_generators()` (a 248-dim transform) takes ~a minute, and `root_syste
 recovery — which recomputes `f` from the `D×D` generators at `O(D⁵)` — is only
 practical up to E₆/E₇.
 
+**F₄** (dim 52) is non-simply-laced, so the cocycle doesn't apply — instead it's the
+**fixed subalgebra of E₆ under its diagram automorphism** σ (1↔6, 3↔5): `F₄ = E₆^σ`,
+so Jacobi is inherited. Folding the *compact* E₆ gives compact F₄ directly:
+
+```julia
+G = f4_generators()                 # 52 compact Hermitian generators
+root_system(G).cartan               # rank 4, 48 roots, det 1 — with the −2 double bond
+```
+
+That completes the whole landscape: **Aₙ/Bₙ/Cₙ/Dₙ and G₂/F₄/E₆/E₇/E₈**, every one
+reduced to a list of generator matrices the rest of the toolkit understands.
+
 ```julia
 f = sp_structure_constants(2)            # USp(4) structure constants (dim 10)
 G = sp_generators(2)
