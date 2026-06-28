@@ -146,3 +146,54 @@ function e6_generators()
     C, roots = chevalley_structure_constants(e6_cartan_matrix())
     return _compact_hermitian_generators(C, 6, length(roots) ÷ 2)
 end
+
+"""
+    e7_cartan_matrix() -> Matrix{Int}
+
+The 7×7 Cartan matrix of E₇ (chain 1–3–4–5–6–7 with node 2 on node 4).
+"""
+function e7_cartan_matrix()
+    A = fill(0, 7, 7)
+    for i in 1:7; A[i, i] = 2; end
+    for (i, j) in ((1, 3), (3, 4), (4, 5), (5, 6), (6, 7), (2, 4)); A[i, j] = A[j, i] = -1; end
+    return A
+end
+
+"""
+    e8_cartan_matrix() -> Matrix{Int}
+
+The 8×8 Cartan matrix of E₈ (chain 1–3–4–5–6–7–8 with node 2 on node 4).
+"""
+function e8_cartan_matrix()
+    A = fill(0, 8, 8)
+    for i in 1:8; A[i, i] = 2; end
+    for (i, j) in ((1, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (2, 4)); A[i, j] = A[j, i] = -1; end
+    return A
+end
+
+"""
+    e7_structure_constants() / e7_roots() / e7_generators()
+
+E₇ (dimension 133, 126 roots): structure constants (dense, Jacobi-satisfying), the
+roots, and the 133 compact Hermitian adjoint generators. See [`e6_structure_constants`](@ref).
+"""
+e7_structure_constants() = first(chevalley_structure_constants(e7_cartan_matrix()))
+e7_roots() = last(chevalley_structure_constants(e7_cartan_matrix()))
+function e7_generators()
+    C, roots = chevalley_structure_constants(e7_cartan_matrix())
+    return _compact_hermitian_generators(C, 7, length(roots) ÷ 2)
+end
+
+"""
+    e8_structure_constants() / e8_roots() / e8_generators()
+
+E₈ (dimension 248, 240 roots): structure constants (dense, Jacobi-satisfying), the
+roots, and the 248 compact Hermitian adjoint generators. The structure constants
+build in a fraction of a second; `e8_generators()` (the compact transform) is heavier.
+"""
+e8_structure_constants() = first(chevalley_structure_constants(e8_cartan_matrix()))
+e8_roots() = last(chevalley_structure_constants(e8_cartan_matrix()))
+function e8_generators()
+    C, roots = chevalley_structure_constants(e8_cartan_matrix())
+    return _compact_hermitian_generators(C, 8, length(roots) ÷ 2)
+end

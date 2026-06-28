@@ -129,8 +129,14 @@ root_system(G).cartan               # recovers the E₆ Cartan (rank 6, 72 roots
 `e6_generators()` passes the split Cartan–Weyl form to the **compact real form**
 `{i hⱼ, e_α+e_{-α}, i(e_α−e_{-α})}` and orthonormalizes under the Killing form, giving
 Hermitian adjoint generators — so the whole toolkit (`root_system`, `casimir`,
-`weights`) applies, and `root_system` rediscovers E₆ from the matrices. Same builder
-gives E₇/E₈ (and the classical Aₙ/Dₙ) — only the Cartan matrix changes.
+`weights`) applies, and `root_system` rediscovers E₆ from the matrices.
+
+The same builder gives **E₇** (dim 133, 126 roots, det 2) and **E₈** (dim 248, 240
+roots, det 1) — `e7_structure_constants()`/`e7_generators()`, `e8_*` likewise (and
+the classical Aₙ/Dₙ). The structure constants build in well under a second; the
+compact `e8_generators()` (a 248-dim transform) takes ~a minute, and `root_system`
+recovery — which recomputes `f` from the `D×D` generators at `O(D⁵)` — is only
+practical up to E₆/E₇.
 
 ```julia
 f = sp_structure_constants(2)            # USp(4) structure constants (dim 10)

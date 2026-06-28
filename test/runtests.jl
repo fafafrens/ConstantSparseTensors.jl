@@ -447,4 +447,25 @@ const ALLOC_CHECK = VERSION >= v"1.12"
         rs = root_system(G)
         @test rs.rank == 6 && length(rs.roots) == 72 && round(Int, det(rs.cartan)) == 3
     end
+
+    @testset "E₇ and E₈ (Chevalley)" begin
+        Random.seed!(0x0078)
+        @test round(Int, det(e7_cartan_matrix())) == 2          # E₇ Cartan determinant
+        @test round(Int, det(e8_cartan_matrix())) == 1          # E₈ Cartan determinant
+        @test length(e7_roots()) == 126                         # E₇ root count
+        @test length(e8_roots()) == 240                         # E₈ root count
+        @test all(dot(α, e7_cartan_matrix() * α) == 2 for α in e7_roots())
+        @test all(dot(α, e8_cartan_matrix() * α) == 2 for α in e8_roots())
+        C7 = e7_structure_constants(); C8 = e8_structure_constants()
+        @test size(C7) == (133, 133, 133) && size(C8) == (248, 248, 248)   # dims 133, 248
+        for (C, D) in ((C7, 133), (C8, 248))                    # sampled Jacobi (full is D⁵)
+            viol = 0.0
+            for _ in 1:3000
+                a, b, c, e = rand(1:D, 4)
+                s = sum(C[a, b, d] * C[d, c, e] + C[b, c, d] * C[d, a, e] + C[c, a, d] * C[d, b, e] for d in 1:D)
+                viol = max(viol, abs(s))
+            end
+            @test viol < 1e-10
+        end
+    end
 end
